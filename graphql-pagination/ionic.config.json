@@ -1,0 +1,7 @@
+{
+  "name": "graphql-pagination",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
