@@ -5,18 +5,19 @@ import { SearchType } from '../enums/search-type';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+const searchType = SearchType.USER;
 const usersQuery = gql`
-  query($search: String!, $type: SearchType!, $first: Int!) {
-    search(query: $search, type: $type, first: $first) {
-      edges {
-        node {
-          ... on User {
-            id
-            email
-            login
-            name
-          }
+  query($searchText: String!, $first: Int!) {
+    search(query: $searchText, type: USER, first: $first) {
+      nodes {
+        ... on User {
+          id
+          email
+          login
         }
+      }
+      pageInfo {
+        hasNextPage
       }
     }
   }
@@ -32,24 +33,26 @@ export class HomePage implements OnInit {
 
   data!: Observable<any>;
 
-  constructor(private apollo: Apollo) {
+  constructor(private apollo: Apollo) {}
+
+  ngOnInit() {
     this.data = this.apollo
       .watchQuery<any>({
         query: usersQuery,
         variables: {
-          search: 'mllrdev',
-          type: SearchType.USER,
+          searchText: 'mllrdev',
           first: 10,
         },
         fetchPolicy: 'cache-and-network',
       })
       .valueChanges.pipe(
         map(({ data }) => {
-          console.log(data);
-          return data;
+          if (data) {
+            console.log(data);
+            const [, ...users] = [data.search.nodes][0];
+            return users;
+          }
         }),
       );
   }
-
-  ngOnInit() {}
 }

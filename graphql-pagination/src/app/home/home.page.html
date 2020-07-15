@@ -14,8 +14,8 @@
   </ion-header>
 
   <div id="container">
-    <ul *ngFor="let entry of data | async">
-      entry
+    <ul *ngFor="let user of data | async">
+      {{user.login}}
     </ul>
   </div>
 </ion-content>
