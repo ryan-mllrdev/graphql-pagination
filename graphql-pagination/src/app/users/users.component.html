@@ -2,6 +2,6 @@
   <ion-item [routerLink]="['/user',user.node.login,'repositories']">{{user.node.login}}</ion-item>
 </ion-list>
 
-<ion-infinite-scroll #infiniteScroll threshold="500px" (ionInfinite)="loadUsers($event)">
+<ion-infinite-scroll threshold="100px" (ionInfinite)="loadUsers($event)">
   <ion-infinite-scroll-content></ion-infinite-scroll-content>
 </ion-infinite-scroll>

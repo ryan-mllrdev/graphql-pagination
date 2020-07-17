@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { HttpClientModule } from '@angular/common/http';
-// 1
+
 import { ApolloModule, APOLLO_OPTIONS, Apollo } from 'apollo-angular';
 import { HttpLink, HttpLinkModule } from 'apollo-angular-link-http';
 import { InMemoryCache, IntrospectionFragmentMatcher } from 'apollo-cache-inmemory';
@@ -16,8 +16,7 @@ export function provideApollo(httpLink: HttpLink) {
     },
   }));
 
-  // Get the authentication token from local storage if it exists
-  const token = 'c25c73cac356584dd10caa2b8e62c4fb19817294';
+  const token = '';
   const auth = setContext((operation, context) => ({
     headers: {
       Authorization: `Bearer ${token}`,
@@ -32,7 +31,7 @@ export function provideApollo(httpLink: HttpLink) {
     }),
   ]);
 
-  const instrospectionFragmentMatcher = new IntrospectionFragmentMatcher({
+  const introspectionFragmentMatcher = new IntrospectionFragmentMatcher({
     introspectionQueryResultData: {
       __schema: {
         types: [
@@ -47,7 +46,7 @@ export function provideApollo(httpLink: HttpLink) {
   });
 
   const cache = new InMemoryCache({
-    fragmentMatcher: instrospectionFragmentMatcher,
+    fragmentMatcher: introspectionFragmentMatcher,
   });
 
   return {
@@ -67,8 +66,5 @@ export function provideApollo(httpLink: HttpLink) {
   ],
 })
 export class GraphQLModule {
-  constructor(private apollo: Apollo) {
-    // reset the store after that
-    // apollo.getClient().resetStore();
-  }
+  constructor(private apollo: Apollo) {}
 }

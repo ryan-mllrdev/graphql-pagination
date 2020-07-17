@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
-import { DataService } from '../service/data.service';
+import { UserService } from '../service/user.service';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-users',
@@ -8,16 +8,16 @@ import { DataService } from '../service/data.service';
   styleUrls: ['./users.component.scss'],
 })
 export class UsersComponent implements OnInit {
-  users!: Observable<any>;
+  users!: any;
 
-  constructor(private dataService: DataService) {}
+  constructor(private userService: UserService) {}
 
   ngOnInit() {
     this.loadInitialUsers();
   }
 
   loadUsers(event: any) {
-    if (this.dataService.usersHasNextPage) {
+    if (this.userService.usersHasNextPage) {
       this.loadMoreUsers();
       event.target.complete();
     } else {
@@ -26,10 +26,13 @@ export class UsersComponent implements OnInit {
   }
 
   private async loadMoreUsers() {
-    this.users = await this.dataService.getUsers(true);
+    await this.userService.fetchUsersData(true);
   }
 
   private async loadInitialUsers() {
-    this.users = await this.dataService.getUsers();
+    await this.userService.fetchUsersData();
+    this.userService.usersQuery.valueChanges.subscribe((usersData: any) => {
+      this.users = this.userService.getUsersData(usersData.data);
+    });
   }
 }

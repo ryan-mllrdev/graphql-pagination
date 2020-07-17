@@ -1,7 +1,7 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
-import { DataService } from '../service/data.service';
+import { UserRepositoryService } from '../service/user-repository.service';
 
 @Component({
   selector: 'app-repositories',
@@ -9,12 +9,12 @@ import { DataService } from '../service/data.service';
   styleUrls: ['./repositories.page.scss'],
 })
 export class RepositoriesPage implements OnInit {
-  repositories!: Observable<any>;
+  repositories!: any;
   // tslint:disable-next-line: whitespace
   login: string | undefined = '';
   counter = 0;
 
-  constructor(private route: ActivatedRoute, private dataService: DataService) {}
+  constructor(private route: ActivatedRoute, private userRepositoryService: UserRepositoryService) {}
 
   ngOnInit() {
     this.login = this.route.snapshot.paramMap.get('login')?.toString();
@@ -22,7 +22,7 @@ export class RepositoriesPage implements OnInit {
   }
 
   loadRepositories(event: any) {
-    if (this.dataService.userRepositoriesHasNextPage) {
+    if (this.userRepositoryService.userRepositoriesHasNextPage) {
       this.loadNextRepositories();
       event.target.complete();
     } else {
@@ -31,10 +31,13 @@ export class RepositoriesPage implements OnInit {
   }
 
   private async loadNextRepositories() {
-    this.repositories = await this.dataService.getUserRepositories(this.login, true);
+    await this.userRepositoryService.fetchUserRepositories(this.login, true);
   }
 
   private async loadInitialRepositories() {
-    this.repositories = await this.dataService.getUserRepositories(this.login);
+    await this.userRepositoryService.fetchUserRepositories(this.login);
+    this.userRepositoryService.userRepositoriesQuery.valueChanges.subscribe((userRepositoryData) => {
+      this.repositories = this.userRepositoryService.getUserRepositories(userRepositoryData.data);
+    });
   }
 }

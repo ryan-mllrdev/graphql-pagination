@@ -11,6 +11,7 @@ export class QueryService {
     return gql`
       query($searchKeyword: String!, $first: Int!, $after: String) {
         search(query: $searchKeyword, type: USER, first: $first, after: $after) {
+          __typename
           userCount
           edges {
             node {
@@ -23,7 +24,6 @@ export class QueryService {
           }
           pageInfo {
             hasNextPage
-            startCursor
             endCursor
           }
         }
@@ -36,6 +36,7 @@ export class QueryService {
       query UserRepositories($login: String!, $first: Int!, $after: String) {
         user(login: $login) {
           repositories(first: $first, after: $after) {
+            __typename
             totalCount
             edges {
               node {
@@ -44,7 +45,6 @@ export class QueryService {
             }
             pageInfo {
               hasNextPage
-              startCursor
               endCursor
             }
           }
