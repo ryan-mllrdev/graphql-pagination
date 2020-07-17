@@ -1,3 +1,7 @@
-<p>
-  users works!
-</p>
+<ion-list *ngFor="let user of users | async">
+  <ion-item [routerLink]="['/user',user.node.login,'repositories']">{{user.node.login}}</ion-item>
+</ion-list>
+
+<ion-infinite-scroll #infiniteScroll threshold="500px" (ionInfinite)="loadUsers($event)">
+  <ion-infinite-scroll-content></ion-infinite-scroll-content>
+</ion-infinite-scroll>

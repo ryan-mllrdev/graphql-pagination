@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Blank
+      GraphQL-Apollo
     </ion-title>
   </ion-toolbar>
 </ion-header>
@@ -9,13 +9,11 @@
 <ion-content [fullscreen]="true">
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
+      <ion-title size="small">Github Users</ion-title>
     </ion-toolbar>
   </ion-header>
 
   <div id="container">
-    <ul *ngFor="let user of data | async">
-      {{user.login}}
-    </ul>
+    <app-users></app-users>
   </div>
 </ion-content>

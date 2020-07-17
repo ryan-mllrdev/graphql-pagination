@@ -1,0 +1,18 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>[{{login}}] - Repositories</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+
+  <ion-list *ngFor="let repository of repositories | async">
+    <ion-item>{{repository.node.name}}</ion-item>
+  </ion-list>
+
+  <ion-infinite-scroll threshold="200px" (ionInfinite)="loadRepositories($event)">
+    <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText="Loading more data...">
+    </ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+
+</ion-content>
