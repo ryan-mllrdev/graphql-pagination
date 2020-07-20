@@ -1,7 +1,21 @@
-<ion-list *ngFor="let user of users | async">
-  <ion-item [routerLink]="['/user',user.node.login,'repositories']">{{user.node.login}}</ion-item>
-</ion-list>
+<ion-grid>
+  <ion-col size="12">
 
-<ion-infinite-scroll threshold="100px" (ionInfinite)="loadUsers($event)">
-  <ion-infinite-scroll-content></ion-infinite-scroll-content>
+    <ion-searchbar [formControl]="searchInput"></ion-searchbar>
+
+    <ion-item lines="none">
+      <ion-text>
+        Results {{currentCount}} of {{totalCount}}
+      </ion-text>
+    </ion-item>
+
+    <ion-list *ngFor="let user of users | async | ngSearchPipe:searchText" lines="none">
+      <app-user [user]="user"></app-user>
+    </ion-list>
+  </ion-col>
+</ion-grid>
+
+<ion-infinite-scroll (ionInfinite)="loadUsers($event)">
+  <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText={{loadingStatus}}>
+  </ion-infinite-scroll-content>
 </ion-infinite-scroll>

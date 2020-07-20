@@ -7,13 +7,14 @@ import gql from 'graphql-tag';
 export class QueryService {
   constructor() {}
 
-  getUsersQuery() {
+  get usersQuery() {
     return gql`
       query($searchKeyword: String!, $first: Int!, $after: String) {
         search(query: $searchKeyword, type: USER, first: $first, after: $after) {
           __typename
           userCount
           edges {
+            cursor
             node {
               ... on User {
                 id
@@ -31,7 +32,7 @@ export class QueryService {
     `;
   }
 
-  getUsersRepositoriesQuery() {
+  get userRepositoriesQuery() {
     return gql`
       query UserRepositories($login: String!, $first: Int!, $after: String) {
         user(login: $login) {

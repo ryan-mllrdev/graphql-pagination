@@ -12,10 +12,12 @@ import { GraphQLModule } from './apollo.config';
 
 import { ReactiveFormsModule } from '@angular/forms';
 
+import { NgSearchPipe } from 'ng-search-pipe';
+
 @NgModule({
   declarations: [AppComponent],
   entryComponents: [],
-  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, GraphQLModule, ReactiveFormsModule],
+  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, GraphQLModule, ReactiveFormsModule, NgSearchPipe],
   providers: [StatusBar, SplashScreen, { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
   bootstrap: [AppComponent],
 })

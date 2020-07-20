@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
-import { map } from 'rxjs/operators';
 import { QueryService } from './queries.service';
-import { of } from 'rxjs';
+import { of, Observable } from 'rxjs';
+import { IUser } from '../interfaces/IUser';
 
-const NUMBER_OF_RESULT = 10;
+const NUMBER_OF_RESULT = 50;
 const FETCH_POLICY = 'cache-and-network';
-const DEFAULT_SEARCH = 'location:philippines';
+const DEFAULT_SEARCH = 'location:toronto location:philippines location:japan location:canada';
 
 @Injectable({
   providedIn: 'root',
@@ -14,6 +14,8 @@ const DEFAULT_SEARCH = 'location:philippines';
 export class UserService {
   private userListCursor = '';
   private userListHasNextPage = false;
+  private totalCount = 0;
+  private currentCount = 0;
 
   private users: any;
 
@@ -21,7 +23,7 @@ export class UserService {
 
   constructor(private apollo: Apollo, private queryService: QueryService) {}
 
-  private async getMoreUsers() {
+  private async fetchMoreUsers() {
     try {
       await this.usersQuery.fetchMore({
         variables: {
@@ -37,6 +39,8 @@ export class UserService {
 
           this.userListCursor = currentPageInfo.endCursor;
           this.userListHasNextPage = currentPageInfo.hasNextPage;
+
+          this.currentCount += currentUsers.length;
 
           const users = [...currentUsers, ...previousUsers];
 
@@ -59,25 +63,29 @@ export class UserService {
     }
   }
 
-  async fetchUsersData(fetchMore: boolean = false, searchWord: string = DEFAULT_SEARCH, numberOfResult: number = NUMBER_OF_RESULT) {
-    const queryUsers = this.queryService.getUsersQuery();
+  async fetchUsers(fetchMore: boolean = false, searchWord: string = DEFAULT_SEARCH, numberOfResult: number = NUMBER_OF_RESULT) {
+    const usersQuery = this.queryService.usersQuery;
     const queryVariables = {
       searchKeyword: searchWord,
       first: numberOfResult,
     };
 
     if (fetchMore) {
-      await this.getMoreUsers();
+      await this.fetchMoreUsers();
     } else {
-      this.usersQuery = this.apollo.watchQuery<any>({
-        query: queryUsers,
-        variables: queryVariables,
-        fetchPolicy: FETCH_POLICY,
-      });
+      this.fetchInitialUsers(usersQuery, queryVariables);
     }
   }
 
-  getUsersData(usersData: any) {
+  private fetchInitialUsers(usersQuery: any, queryVariables: {}) {
+    this.usersQuery = this.apollo.watchQuery<any>({
+      query: usersQuery,
+      variables: queryVariables,
+      fetchPolicy: FETCH_POLICY,
+    });
+  }
+
+  getCurrentUsers(usersData: any): Observable<IUser[]> | undefined {
     if (!usersData) {
       return;
     }
@@ -86,13 +94,31 @@ export class UserService {
 
     this.userListCursor = currentPageInfo.endCursor;
     this.userListHasNextPage = currentPageInfo.hasNextPage;
+    this.totalCount = usersData.search.userCount;
 
-    const [, ...users] = usersData.search.edges;
+    const users = usersData.search.edges;
 
-    return of(users);
+    this.currentCount = users.length;
+
+    const userList: IUser[] = [];
+    users.forEach((user: any) => userList.push({ name: user.node.login }));
+
+    return of(userList);
   }
 
   get usersHasNextPage(): boolean {
     return this.userListHasNextPage;
+  }
+
+  get usersCount(): number {
+    return this.totalCount;
+  }
+
+  get fetchedCount(): number {
+    return this.currentCount;
+  }
+
+  get numberOfResult(): number {
+    return NUMBER_OF_RESULT;
   }
 }

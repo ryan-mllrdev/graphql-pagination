@@ -1,18 +1,32 @@
-<ion-header>
-  <ion-toolbar>
-    <ion-title>[{{login}}] - Repositories</ion-title>
-  </ion-toolbar>
-</ion-header>
-
 <ion-content>
+  <ion-header>
+    <ion-item color="primary">
+      <ion-item slot="end" routerLink routerDirection="back" color="primary">Back</ion-item>
+      <ion-text slot="start">Repositories
+        <ion-card-subtitle color="secondary">
+          {{login}}
+        </ion-card-subtitle>
+      </ion-text>
+    </ion-item>
+  </ion-header>
 
-  <ion-list *ngFor="let repository of repositories | async">
-    <ion-item>{{repository.node.name}}</ion-item>
-  </ion-list>
+  <ion-grid>
+
+    <ion-item lines="none">
+      <ion-text>
+        Results {{currentCount}} of {{totalCount}}
+      </ion-text>
+    </ion-item>
+
+    <ion-col size="12">
+      <ion-list *ngFor="let repository of repositories | async" lines="none">
+        <app-repository [repository]="repository"></app-repository>
+      </ion-list>
+    </ion-col>
+  </ion-grid>
 
   <ion-infinite-scroll threshold="100px" (ionInfinite)="loadRepositories($event)">
-    <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText="Loading more data...">
+    <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText="{{loadingStatus}}">
     </ion-infinite-scroll-content>
   </ion-infinite-scroll>
-
 </ion-content>

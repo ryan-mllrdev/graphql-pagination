@@ -2,9 +2,10 @@ import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
 import { map } from 'rxjs/operators';
 import { QueryService } from './queries.service';
-import { of } from 'rxjs';
+import { of, Observable } from 'rxjs';
+import { IRepository as IUserRepository, IRepository } from '../interfaces/IRepository';
 
-const NUMBER_OF_RESULT = 10;
+const NUMBER_OF_RESULT = 50;
 const FETCH_POLICY = 'cache-and-network';
 
 @Injectable({
@@ -13,13 +14,15 @@ const FETCH_POLICY = 'cache-and-network';
 export class UserRepositoryService {
   private repositoryListEndCursor = '';
   private repositoryListHasNextPage = false;
+  private totalCount = 0;
+  private currentCount = 0;
 
   private repositories: any;
 
   userRepositoriesQuery!: QueryRef<any>;
 
   constructor(private apollo: Apollo, private queryService: QueryService) {}
-  private async getMoreUserRepositories() {
+  private async fetchMoreUserRepositories() {
     await this.userRepositoriesQuery.fetchMore({
       variables: {
         after: this.repositoryListEndCursor,
@@ -37,6 +40,8 @@ export class UserRepositoryService {
 
         this.repositoryListEndCursor = currentPageInfo.endCursor;
         this.repositoryListHasNextPage = currentPageInfo.hasNextPage;
+
+        this.currentCount += currentUserRepositories.length;
 
         this.repositories = [...currentUserRepositories, ...previousUserRepositories];
 
@@ -57,15 +62,19 @@ export class UserRepositoryService {
     });
   }
 
-  async fetchUserRepositories(loginName: string | undefined, fetchMore: boolean = false, numberOfResult: number = NUMBER_OF_RESULT) {
-    const queryUserRepositories = this.queryService.getUsersRepositoriesQuery();
+  async fetchUserRepositories(loginName: string, fetchMore: boolean = false, numberOfResult: number = NUMBER_OF_RESULT) {
+    if (!loginName) {
+      return;
+    }
+
+    const queryUserRepositories = this.queryService.userRepositoriesQuery;
     const queryVariables = {
       login: loginName,
       first: numberOfResult,
     };
 
     if (fetchMore) {
-      await this.getMoreUserRepositories();
+      await this.fetchMoreUserRepositories();
     } else {
       this.userRepositoriesQuery = this.apollo.watchQuery<any>({
         query: queryUserRepositories,
@@ -75,7 +84,7 @@ export class UserRepositoryService {
     }
   }
 
-  getUserRepositories(userRepositories: any) {
+  getCurrentUserRepositories(userRepositories: any): Observable<IRepository[]> | undefined {
     if (!userRepositories) {
       return;
     }
@@ -87,10 +96,28 @@ export class UserRepositoryService {
 
     this.repositories = userRepositories.user.repositories.edges;
 
-    return of(this.repositories);
+    this.totalCount = userRepositories.user.repositories.totalCount;
+    this.currentCount = this.repositories.length;
+
+    const repositoryList: IUserRepository[] = [];
+    this.repositories.forEach((repository: any) => repositoryList.push({ name: repository.node.name }));
+
+    return of(repositoryList);
   }
 
   get userRepositoriesHasNextPage(): boolean {
     return this.repositoryListHasNextPage;
+  }
+
+  get repositoriesCount(): number {
+    return this.totalCount;
+  }
+
+  get fetchedCount(): number {
+    return this.currentCount;
+  }
+
+  get numberOfResult(): number {
+    return NUMBER_OF_RESULT;
   }
 }
