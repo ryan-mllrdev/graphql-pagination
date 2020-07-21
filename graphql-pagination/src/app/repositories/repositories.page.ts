@@ -1,8 +1,8 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { UserRepositoryService } from '../service/user-repository.service';
-import { IRepository } from '../interfaces/IRepository';
+import { Repository } from '../types/Repository';
 
 @Component({
   selector: 'app-repositories',
@@ -10,7 +10,7 @@ import { IRepository } from '../interfaces/IRepository';
   styleUrls: ['./repositories.page.scss'],
 })
 export class RepositoriesPage implements OnInit {
-  repositories!: Observable<IRepository[]> | undefined;
+  repositories!: Observable<Repository[]> | undefined;
   login = '';
   counter = 0;
   event!: any;

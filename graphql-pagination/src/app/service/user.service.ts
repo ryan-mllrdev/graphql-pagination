@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
 import { QueryService } from './queries.service';
 import { of, Observable } from 'rxjs';
-import { IUser } from '../interfaces/IUser';
+import ApolloClient from 'apollo-client';
+import { UserResult } from '../types/UserResult';
+import { User } from '../types/User';
 
 const NUMBER_OF_RESULT = 50;
 const FETCH_POLICY = 'cache-and-network';
@@ -18,10 +20,13 @@ export class UserService {
   private currentCount = 0;
 
   private users: any;
+  private apolloClient: ApolloClient<any>;
 
   usersQuery!: QueryRef<any>;
 
-  constructor(private apollo: Apollo, private queryService: QueryService) {}
+  constructor(private apollo: Apollo, private queryService: QueryService) {
+    this.apolloClient = apollo.getClient();
+  }
 
   private async fetchMoreUsers() {
     try {
@@ -46,7 +51,7 @@ export class UserService {
 
           this.users = users;
 
-          const newUsersList = {
+          const newSearchResult: UserResult = {
             search: {
               __typename: typeName,
               userCount: currentUserCount,
@@ -55,7 +60,7 @@ export class UserService {
             },
           };
 
-          return newUsersList;
+          return newSearchResult;
         },
       });
     } catch (error) {
@@ -85,7 +90,7 @@ export class UserService {
     });
   }
 
-  getCurrentUsers(usersData: any): Observable<IUser[]> | undefined {
+  getUserResults(usersData: any): Observable<User[]> | undefined {
     if (!usersData) {
       return;
     }
@@ -100,7 +105,7 @@ export class UserService {
 
     this.currentCount = users.length;
 
-    const userList: IUser[] = [];
+    const userList: User[] = [];
     users.forEach((user: any) => userList.push({ name: user.node.login }));
 
     return of(userList);

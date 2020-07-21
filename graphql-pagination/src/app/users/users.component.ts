@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { UserService } from '../service/user.service';
 import { of, Observable } from 'rxjs';
 import { FormControl } from '@angular/forms';
-import { IUser } from '../interfaces/IUser';
+import { User } from '../types/User';
 
 @Component({
   selector: 'app-users',
@@ -10,7 +10,7 @@ import { IUser } from '../interfaces/IUser';
   styleUrls: ['./users.component.scss'],
 })
 export class UsersComponent implements OnInit {
-  users!: Observable<IUser[]> | undefined;
+  users!: Observable<User[]> | undefined;
   searchInput!: FormControl;
   searchText = '';
   totalCount = 0;
@@ -52,7 +52,7 @@ export class UsersComponent implements OnInit {
         return;
       }
 
-      this.users = this.userService.getCurrentUsers(usersData.data);
+      this.users = this.userService.getUserResults(usersData.data);
       this.totalCount = this.userService.usersCount;
       this.currentCount = this.userService.fetchedCount;
 

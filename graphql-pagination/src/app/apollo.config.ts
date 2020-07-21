@@ -16,7 +16,7 @@ export function provideApollo(httpLink: HttpLink) {
     },
   }));
 
-  const token = '';
+  const token = 'ad41cb8e5c81800326ed40dda72faa122975038b';
   const auth = setContext((operation, context) => ({
     headers: {
       Authorization: `Bearer ${token}`,

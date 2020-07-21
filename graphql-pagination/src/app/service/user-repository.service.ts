@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
-import { map } from 'rxjs/operators';
 import { QueryService } from './queries.service';
 import { of, Observable } from 'rxjs';
-import { IRepository as IUserRepository, IRepository } from '../interfaces/IRepository';
+import { RepositoryResult } from '../types/RepositoryResult';
+import { Repository } from '../types/Repository';
 
 const NUMBER_OF_RESULT = 50;
 const FETCH_POLICY = 'cache-and-network';
@@ -45,7 +45,7 @@ export class UserRepositoryService {
 
         this.repositories = [...currentUserRepositories, ...previousUserRepositories];
 
-        const newRepositories = {
+        const newResults: RepositoryResult = {
           user: {
             __typename: typeName,
             repositories: {
@@ -57,7 +57,7 @@ export class UserRepositoryService {
           },
         };
 
-        return newRepositories;
+        return newResults;
       },
     });
   }
@@ -84,7 +84,7 @@ export class UserRepositoryService {
     }
   }
 
-  getCurrentUserRepositories(userRepositories: any): Observable<IRepository[]> | undefined {
+  getCurrentUserRepositories(userRepositories: any): Observable<Repository[]> | undefined {
     if (!userRepositories) {
       return;
     }
@@ -99,7 +99,7 @@ export class UserRepositoryService {
     this.totalCount = userRepositories.user.repositories.totalCount;
     this.currentCount = this.repositories.length;
 
-    const repositoryList: IUserRepository[] = [];
+    const repositoryList: Repository[] = [];
     this.repositories.forEach((repository: any) => repositoryList.push({ name: repository.node.name }));
 
     return of(repositoryList);
