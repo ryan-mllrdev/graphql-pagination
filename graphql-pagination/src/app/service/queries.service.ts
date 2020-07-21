@@ -9,7 +9,7 @@ export class QueryService {
 
   get usersQuery() {
     return gql`
-      query($searchKeyword: String!, $first: Int!, $after: String) {
+      query Users($searchKeyword: String!, $first: Int!, $after: String) {
         search(query: $searchKeyword, type: USER, first: $first, after: $after) {
           __typename
           userCount

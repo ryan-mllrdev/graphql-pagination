@@ -27,12 +27,8 @@ export class RepositoriesPage implements OnInit {
   }
 
   loadRepositories(event: any) {
-    const remainingCount: number = this.totalCount - this.currentCount;
-    const fetchCount =
-      remainingCount < this.userRepositoryService.numberOfResult ? remainingCount : this.userRepositoryService.numberOfResult;
-    this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
-
     this.event = event;
+    this.showFetchStatus();
 
     if (this.userRepositoryService.userRepositoriesHasNextPage) {
       this.loadNextRepositories();
@@ -41,24 +37,42 @@ export class RepositoriesPage implements OnInit {
     }
   }
 
+  private showFetchStatus() {
+    const remainingCount: number = this.totalCount - this.currentCount;
+    const fetchCount =
+      remainingCount < this.userRepositoryService.numberOfResult ? remainingCount : this.userRepositoryService.numberOfResult;
+    this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
+  }
+
   private async loadNextRepositories() {
-    await this.userRepositoryService.fetchUserRepositories(this.login, true);
+    const cachedRepositories = await this.userRepositoryService.fetchUserRepositories(this.login, true);
+    if (cachedRepositories) {
+      this.updateValues(cachedRepositories);
+    }
+  }
+
+  private updateValues(fetchResult: any) {
+    this.repositories = this.userRepositoryService.getCurrentUserRepositories(fetchResult);
+    this.totalCount = this.userRepositoryService.repositoriesCount;
+    this.currentCount = this.userRepositoryService.fetchedCount;
+
+    if (this.event) {
+      this.event.target.complete();
+    }
   }
 
   private async loadInitialRepositories() {
-    await this.userRepositoryService.fetchUserRepositories(this.login);
-    this.userRepositoryService.userRepositoriesQuery.valueChanges.subscribe((userRepositoryData) => {
+    const cachedRepositories = await this.userRepositoryService.fetchUserRepositories(this.login);
+    if (cachedRepositories) {
+      this.updateValues(cachedRepositories);
+      return;
+    }
+
+    this.userRepositoryService.userRepositoriesWatchedQuery.valueChanges.subscribe((userRepositoryData) => {
       if (!userRepositoryData.data || userRepositoryData.loading) {
         return;
       }
-
-      this.repositories = this.userRepositoryService.getCurrentUserRepositories(userRepositoryData.data);
-      this.totalCount = this.userRepositoryService.repositoriesCount;
-      this.currentCount = this.userRepositoryService.fetchedCount;
-
-      if (this.event) {
-        this.event.target.complete();
-      }
+      this.updateValues(userRepositoryData.data);
     });
   }
 }
