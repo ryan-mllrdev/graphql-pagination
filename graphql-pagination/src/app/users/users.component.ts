@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { UserService } from '../service/user.service';
 import { of, Observable } from 'rxjs';
 import { FormControl } from '@angular/forms';
-import { IUser } from '../interfaces/IUser';
+import { User } from '../types/User';
 
 @Component({
   selector: 'app-users',
@@ -10,7 +10,7 @@ import { IUser } from '../interfaces/IUser';
   styleUrls: ['./users.component.scss'],
 })
 export class UsersComponent implements OnInit {
-  users!: Observable<IUser[]> | undefined;
+  users!: Observable<User[]> | undefined;
   searchInput!: FormControl;
   searchText = '';
   totalCount = 0;
@@ -28,14 +28,13 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  loadUsers(event: any) {
-    const remainingCount: number = this.totalCount - this.currentCount;
-    const fetchCount = remainingCount < this.userService.numberOfResult ? remainingCount : this.userService.numberOfResult;
-    this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
-
+  async loadUsers(event: any) {
     this.event = event;
+
+    this.showFetchStatus();
+
     if (this.userService.usersHasNextPage) {
-      this.loadMoreUsers();
+      await this.loadMoreUsers();
     } else {
       event.target.disabled = true;
     }
@@ -47,18 +46,35 @@ export class UsersComponent implements OnInit {
 
   private async loadInitialUsers() {
     await this.userService.fetchUsers();
-    this.userService.usersQuery.valueChanges.subscribe((usersData: any) => {
+
+    this.userService.usersWatchQuery.valueChanges.subscribe((usersData: any) => {
+      if (!this.userService.usersHasNextPage) {
+        this.event.target.disabled = true;
+        this.updateValues();
+        return;
+      }
+
       if (!usersData.data || usersData.loading) {
         return;
       }
 
-      this.users = this.userService.getCurrentUsers(usersData.data);
-      this.totalCount = this.userService.usersCount;
-      this.currentCount = this.userService.fetchedCount;
-
-      if (this.event) {
-        this.event.target.complete();
-      }
+      this.users = this.userService.getUserResults(usersData.data);
+      this.updateValues();
     });
+  }
+
+  private updateValues() {
+    this.totalCount = this.userService.usersCount;
+    this.currentCount = this.userService.fetchedCount;
+
+    if (this.event) {
+      this.event.target.complete();
+    }
+  }
+
+  private showFetchStatus() {
+    const remainingCount: number = this.totalCount - this.currentCount;
+    const fetchCount = remainingCount < this.userService.numberOfResult ? remainingCount : this.userService.numberOfResult;
+    this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
   }
 }

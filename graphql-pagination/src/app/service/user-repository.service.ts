@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
-import { map } from 'rxjs/operators';
 import { QueryService } from './queries.service';
 import { of, Observable } from 'rxjs';
-import { IRepository as IUserRepository, IRepository } from '../interfaces/IRepository';
+import { RepositoryResult } from '../types/RepositoryResult';
+import { Repository } from '../types/Repository';
+import ApolloClient from 'apollo-client';
 
 const NUMBER_OF_RESULT = 50;
 const FETCH_POLICY = 'cache-and-network';
@@ -16,50 +17,14 @@ export class UserRepositoryService {
   private repositoryListHasNextPage = false;
   private totalCount = 0;
   private currentCount = 0;
+  private queryVariables: any = {};
 
-  private repositories: any;
+  private apolloClient!: ApolloClient<any>;
 
-  userRepositoriesQuery!: QueryRef<any>;
+  userRepositoriesWatchedQuery!: QueryRef<any>;
 
-  constructor(private apollo: Apollo, private queryService: QueryService) {}
-  private async fetchMoreUserRepositories() {
-    await this.userRepositoriesQuery.fetchMore({
-      variables: {
-        after: this.repositoryListEndCursor,
-      },
-      updateQuery: (previousResult, { fetchMoreResult }) => {
-        const userRepositories = fetchMoreResult.user.repositories;
-
-        const previousUserRepositories = previousResult.user.repositories.edges;
-        const currentUserRepositories = userRepositories.edges;
-
-        const typeName = userRepositories.__typename;
-        const count = userRepositories.totalCount;
-
-        const currentPageInfo = fetchMoreResult.user.repositories.pageInfo;
-
-        this.repositoryListEndCursor = currentPageInfo.endCursor;
-        this.repositoryListHasNextPage = currentPageInfo.hasNextPage;
-
-        this.currentCount += currentUserRepositories.length;
-
-        this.repositories = [...currentUserRepositories, ...previousUserRepositories];
-
-        const newRepositories = {
-          user: {
-            __typename: typeName,
-            repositories: {
-              __typename: typeName,
-              totalCount: count,
-              edges: this.repositories,
-              pageInfo: currentPageInfo,
-            },
-          },
-        };
-
-        return newRepositories;
-      },
-    });
+  constructor(private apollo: Apollo, private queryService: QueryService) {
+    this.apolloClient = apollo.getClient();
   }
 
   async fetchUserRepositories(loginName: string, fetchMore: boolean = false, numberOfResult: number = NUMBER_OF_RESULT) {
@@ -67,44 +32,63 @@ export class UserRepositoryService {
       return;
     }
 
-    const queryUserRepositories = this.queryService.userRepositoriesQuery;
-    const queryVariables = {
-      login: loginName,
-      first: numberOfResult,
-    };
+    try {
+      // Update query variables
+      this.setQueryVariables(loginName);
 
-    if (fetchMore) {
-      await this.fetchMoreUserRepositories();
-    } else {
-      this.userRepositoriesQuery = this.apollo.watchQuery<any>({
-        query: queryUserRepositories,
-        variables: queryVariables,
-        fetchPolicy: FETCH_POLICY,
-      });
+      // Read data from cache if available
+      const cachedRepositories = this.readFromCached();
+
+      // If cached result hasn't completed, throw an error to redirect to fetching more results
+      if (cachedRepositories.user.repositories.pageInfo.hasNextPage) {
+        fetchMore = true;
+        throw new Error();
+      }
+
+      // return all results
+      return cachedRepositories;
+    } catch (error) {
+      // Fetch more results
+      if (fetchMore) {
+        await this.fetchMoreUserRepositories();
+      } else {
+        // Initial request
+        this.setInitialQuery();
+      }
     }
   }
 
-  getCurrentUserRepositories(userRepositories: any): Observable<IRepository[]> | undefined {
-    if (!userRepositories) {
+  getCurrentUserRepositories(fetchResult: any): Observable<Repository[]> | undefined {
+    if (!fetchResult) {
       return;
     }
 
-    const pageInfo = userRepositories.user.repositories.pageInfo;
+    // user.repositories
+    // user.repositories.pageInfo
+    const userRepositories = fetchResult.user.repositories;
+    const pageInfo = userRepositories.pageInfo;
 
+    // pageInfo.endCursor
+    // pageInfo.hasNextPage
     this.repositoryListEndCursor = pageInfo.endCursor;
     this.repositoryListHasNextPage = pageInfo.hasNextPage;
 
-    this.repositories = userRepositories.user.repositories.edges;
+    // user.repositories.edges
+    const repositoryEdges = userRepositories.edges;
 
-    this.totalCount = userRepositories.user.repositories.totalCount;
-    this.currentCount = this.repositories.length;
+    // user.repositories.totalCount
+    this.totalCount = userRepositories.totalCount;
 
-    const repositoryList: IUserRepository[] = [];
-    this.repositories.forEach((repository: any) => repositoryList.push({ name: repository.node.name }));
+    this.currentCount = repositoryEdges.length;
 
+    // Load results to an array of Repository type
+    const repositoryList: Repository[] = this.fetchResultsAsUserRepositories(repositoryEdges);
+
+    // Return as an observable
     return of(repositoryList);
   }
 
+  // GETTERS
   get userRepositoriesHasNextPage(): boolean {
     return this.repositoryListHasNextPage;
   }
@@ -120,4 +104,88 @@ export class UserRepositoryService {
   get numberOfResult(): number {
     return NUMBER_OF_RESULT;
   }
+  // END: GETTERS
+
+  // PRIVATE FUNCTIONS
+  private async fetchMoreUserRepositories() {
+    const queryVariables = {
+      ...this.queryVariables,
+      after: this.repositoryListEndCursor,
+    };
+
+    await this.userRepositoriesWatchedQuery.fetchMore({
+      variables: queryVariables,
+      updateQuery: (previousResult, { fetchMoreResult }) => {
+        // user.repositories
+        const previousUserRepositories = previousResult.user.repositories;
+        const currentUserRepositories = fetchMoreResult.user.repositories;
+
+        // user.repositories.edges
+        const previousUserRepositoriesEdges = previousUserRepositories.edges;
+        const currentUserRepositoriesEdges = currentUserRepositories.edges;
+
+        // user.repositories.__typename
+        // user.repositories.totalCount
+        const currentTypeName = currentUserRepositories.__typename;
+        const currentTotalCount = currentUserRepositories.totalCount;
+
+        // user.repositories.pageInfo
+        const currentPageInfo = currentUserRepositories.pageInfo;
+
+        // pageInfo.endCursor
+        // pageInfo.hasNextPage
+        this.repositoryListEndCursor = currentPageInfo.endCursor;
+        this.repositoryListHasNextPage = currentPageInfo.hasNextPage;
+
+        this.currentCount += currentUserRepositoriesEdges.length;
+
+        // Merged previous and current results
+        const currentMergedEdges: any[] = [...currentUserRepositoriesEdges, ...previousUserRepositoriesEdges];
+
+        // Update query with this new values
+        const newResults: RepositoryResult = {
+          user: {
+            __typename: currentTypeName,
+            repositories: {
+              __typename: currentTypeName,
+              totalCount: currentTotalCount,
+              edges: currentMergedEdges,
+              pageInfo: currentPageInfo,
+            },
+          },
+        };
+        return newResults;
+      },
+    });
+  }
+
+  private setInitialQuery() {
+    this.userRepositoriesWatchedQuery = this.apollo.watchQuery<any>({
+      query: this.queryService.userRepositoriesQuery,
+      variables: this.queryVariables,
+      fetchPolicy: FETCH_POLICY,
+    });
+  }
+
+  private readFromCached(): any {
+    const cachedRepositories = this.apolloClient.readQuery({
+      query: this.queryService.userRepositoriesQuery,
+      variables: this.queryVariables,
+    });
+    return cachedRepositories;
+  }
+
+  private setQueryVariables(loginName: string) {
+    this.queryVariables = {
+      login: loginName,
+      first: NUMBER_OF_RESULT,
+    };
+  }
+
+  private fetchResultsAsUserRepositories(fetchResults: any): Repository[] {
+    const repositoryList: Repository[] = [];
+    fetchResults.forEach((repository: any) => repositoryList.push({ name: repository.node.name }));
+    return repositoryList;
+  }
+  // END: PRIVATE FUNCTIONS
 }
