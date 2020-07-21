@@ -8,7 +8,6 @@ import { User } from '../types/User';
 
 const NUMBER_OF_RESULT = 50;
 const FETCH_POLICY = 'cache-and-network';
-const DEFAULT_SEARCH = 'location:dumaguete';
 
 @Injectable({
   providedIn: 'root',
@@ -28,12 +27,21 @@ export class UserService {
     this.apolloClient = apollo.getClient();
   }
 
-  async fetchUsers(fetchMore: boolean = false, searchWord: string = DEFAULT_SEARCH, numberOfResult: number = NUMBER_OF_RESULT) {
+  private reset() {
+    this.userListCursor = '';
+    this.userListHasNextPage = true;
+    this.totalCount = 0;
+    this.currentCount = 0;
+    this.queryVariables = {};
+  }
+  async fetchUsers(searchWord: string, fetchMore: boolean = false, numberOfResult: number = NUMBER_OF_RESULT) {
     try {
       this.setQueryVariables(searchWord, numberOfResult);
       if (fetchMore) {
         await this.fetchMoreUsers();
       } else {
+        this.reset();
+        this.setQueryVariables(searchWord, numberOfResult);
         this.setInitialQuery();
       }
     } catch (error) {

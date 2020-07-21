@@ -3,6 +3,11 @@
 
     <ion-searchbar [formControl]="searchInput"></ion-searchbar>
 
+    <ion-item>
+      <ion-input [formControl]="filter" slot="start"></ion-input>
+      <ion-button slot="end" (click)="applyFilter()">Filter</ion-button>
+    </ion-item>
+
     <ion-item lines="none">
       <ion-text>
         Results {{currentCount}} of {{totalCount}}

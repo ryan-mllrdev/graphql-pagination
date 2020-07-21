@@ -17,12 +17,14 @@ export class UsersComponent implements OnInit {
   currentCount = 0;
   event!: any;
   loadingStatus = '';
+  filter!: FormControl;
+  subscribed = false;
 
   constructor(private userService: UserService) {}
 
   ngOnInit() {
-    this.loadInitialUsers();
     this.searchInput = new FormControl();
+    this.filter = new FormControl('location:dumaguete');
     this.searchInput.valueChanges.subscribe((value) => {
       this.searchText = value;
     });
@@ -34,20 +36,30 @@ export class UsersComponent implements OnInit {
     this.showFetchStatus();
 
     if (this.userService.usersHasNextPage) {
-      await this.loadMoreUsers();
+      await this.loadMoreUsers(this.filter.value);
     } else {
       event.target.disabled = true;
     }
   }
 
-  private async loadMoreUsers() {
-    await this.userService.fetchUsers(true);
+  async applyFilter() {
+    if (this.event) {
+      this.event.target.disabled = false;
+    }
+    const keyword = this.filter.value;
+    await this.loadInitialUsers(keyword);
   }
 
-  private async loadInitialUsers() {
-    await this.userService.fetchUsers();
+  private async loadMoreUsers(keyword: string) {
+    await this.userService.fetchUsers(keyword, true);
+  }
+
+  private async loadInitialUsers(keyword: string) {
+    await this.userService.fetchUsers(keyword);
 
     this.userService.usersWatchQuery.valueChanges.subscribe((usersData: any) => {
+      this.subscribed = true;
+
       if (!this.userService.usersHasNextPage) {
         this.event.target.disabled = true;
         this.updateValues();
