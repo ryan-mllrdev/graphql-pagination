@@ -140,7 +140,7 @@ export class UserRepositoryService {
         this.currentCount += currentUserRepositoriesEdges.length;
 
         // Merged previous and current results
-        const currentMergedEdges: any[] = [...currentUserRepositoriesEdges, ...previousUserRepositoriesEdges];
+        const currentMergedEdges = [...currentUserRepositoriesEdges, ...previousUserRepositoriesEdges];
 
         // Update query with this new values
         const newResults: RepositoryResult = {

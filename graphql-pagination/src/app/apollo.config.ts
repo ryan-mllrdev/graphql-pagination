@@ -47,6 +47,7 @@ export function provideApollo(httpLink: HttpLink) {
 
   const cache = new InMemoryCache({
     fragmentMatcher: introspectionFragmentMatcher,
+    resultCaching: true,
   });
 
   return {

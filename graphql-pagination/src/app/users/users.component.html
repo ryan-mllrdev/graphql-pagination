@@ -1,12 +1,24 @@
 <ion-grid>
   <ion-col size="12">
 
-    <ion-searchbar [formControl]="searchInput"></ion-searchbar>
+    <ion-searchbar placeholder="Filter current results" [formControl]="searchInput"></ion-searchbar>
 
-    <ion-item>
-      <ion-input [formControl]="filter" slot="start"></ion-input>
-      <ion-button slot="end" (click)="applyFilter()">Filter</ion-button>
+    <ion-item lines="none">
+      <ion-item class="ion-no-padding">
+        <ion-input placeholder="Enter search keyword" clearInput [formControl]="filter"></ion-input>
+      </ion-item>
+      <ion-item lines="none" slot="end">
+        <ion-button (click)="applyFilter()" shape="round">Apply</ion-button>
+      </ion-item>
     </ion-item>
+    <!-- <ion-item lines="none">
+      <ion-select [formControl]="selectedSearchHistory" style="font-size: 1rem;" placeholder="None Selected"
+        okText="Okay" cancelText="Cancel">
+        <ion-label style="color:gray;">Search History</ion-label>
+        <ion-select-option *ngFor="let keyword of searchHistory" [value]="keyword">{{keyword}}</ion-select-option>
+      </ion-select>
+      <ion-text>Search History</ion-text>
+    </ion-item> -->
 
     <ion-item lines="none">
       <ion-text>

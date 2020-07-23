@@ -6,8 +6,8 @@ import ApolloClient from 'apollo-client';
 import { UserResult } from '../types/UserResult';
 import { User } from '../types/User';
 
-const NUMBER_OF_RESULT = 50;
-const FETCH_POLICY = 'cache-and-network';
+const NUMBER_OF_RESULT = 10;
+const FETCH_POLICY = 'cache-first';
 
 @Injectable({
   providedIn: 'root',
@@ -19,7 +19,7 @@ export class UserService {
   private currentCount = 0;
 
   private apolloClient: ApolloClient<any>;
-  private queryVariables = {};
+  private usersConnectionCache: any;
 
   usersWatchQuery!: QueryRef<any>;
 
@@ -27,45 +27,59 @@ export class UserService {
     this.apolloClient = apollo.getClient();
   }
 
-  private reset() {
-    this.userListCursor = '';
-    this.userListHasNextPage = true;
-    this.totalCount = 0;
-    this.currentCount = 0;
-    this.queryVariables = {};
-  }
   async fetchUsers(searchWord: string, fetchMore: boolean = false, numberOfResult: number = NUMBER_OF_RESULT) {
-    try {
-      this.setQueryVariables(searchWord, numberOfResult);
-      if (fetchMore) {
-        await this.fetchMoreUsers();
-      } else {
+    if (fetchMore) {
+      return await this.fetchMoreUsers();
+    } else {
+      try {
+        this.usersWatchQuery.setOptions({
+          query: this.queryService.usersQuery,
+          variables: {
+            first: numberOfResult,
+            searchKeyword: searchWord,
+          },
+        });
+
+        // Try to read from cache
+        this.usersConnectionCache = this.apolloClient.readQuery({
+          query: this.queryService.usersQuery,
+          variables: {
+            first: numberOfResult,
+            searchKeyword: searchWord,
+          },
+        });
+
+        return this.usersConnectionCache;
+      } catch (error) {
         this.reset();
-        this.setQueryVariables(searchWord, numberOfResult);
-        this.setInitialQuery();
+        this.initializeQuery({
+          first: numberOfResult,
+          searchKeyword: searchWord,
+        });
       }
-    } catch (error) {
-      console.log(error);
     }
   }
 
-  getUserResults(usersData: any): Observable<User[]> | undefined {
-    if (!usersData) {
+  getUserResults(usersConnection: any): Observable<User[]> | undefined {
+    if (!usersConnection.search) {
       return;
     }
 
-    const currentPageInfo = usersData.search.pageInfo;
+    // search.edges
+    // search.pageInfo
+    const usersConnectionEdges = usersConnection.search.edges;
+    const currentPageInfo = usersConnection.search.pageInfo;
 
+    // pageInfo.endCursor
+    // pageInfo.hasNextPage
+    // search.userCount
     this.userListCursor = currentPageInfo.endCursor;
     this.userListHasNextPage = currentPageInfo.hasNextPage;
-    this.totalCount = usersData.search.userCount;
+    this.totalCount = usersConnection.search.userCount;
 
-    const users = usersData.search.edges;
+    this.currentCount = usersConnectionEdges.length;
 
-    this.currentCount = users.length;
-
-    const userList: User[] = this.fetchResultsAsUsers(users);
-
+    const userList: User[] = this.fetchResultsAsUsers(usersConnectionEdges);
     return of(userList);
   }
 
@@ -91,10 +105,10 @@ export class UserService {
   private async fetchMoreUsers() {
     try {
       const queryVariables = {
-        ...this.queryVariables,
         after: this.userListCursor,
       };
 
+      let newResults: any;
       await this.usersWatchQuery.fetchMore({
         variables: queryVariables,
         updateQuery: (previousResult, { fetchMoreResult }) => {
@@ -114,43 +128,35 @@ export class UserService {
           this.userListCursor = currentPageInfo.endCursor;
           this.userListHasNextPage = currentPageInfo.hasNextPage;
 
-          this.currentCount += currentSearchEdges.length;
-
           // Merged previous and current results
           const mergeEdgesResult = [...currentSearchEdges, ...previousSearchEdges];
 
-          // Load users data to a list of type User
-          const userList: User[] = this.fetchResultsAsUsers(mergeEdgesResult);
+          this.currentCount = mergeEdgesResult.length;
 
           // Return this result to update the query with the new values
           const newSearchResult: UserResult = {
             search: {
               __typename: typeName,
               userCount: currentUserCount,
-              edges: userList,
+              edges: mergeEdgesResult,
               pageInfo: currentPageInfo,
             },
           };
 
-          return newSearchResult;
+          return (newResults = newSearchResult);
         },
       });
+      return newResults;
     } catch (error) {
       console.log(error);
     }
+    return null;
   }
 
-  private setQueryVariables(searchWord: string, numberOfResult: number) {
-    this.queryVariables = {
-      searchKeyword: searchWord,
-      first: numberOfResult,
-    };
-  }
-
-  private setInitialQuery() {
+  private initializeQuery(queryVariables: any) {
     this.usersWatchQuery = this.apollo.watchQuery<any>({
       query: this.queryService.usersQuery,
-      variables: this.queryVariables,
+      variables: queryVariables,
       fetchPolicy: FETCH_POLICY,
     });
   }
@@ -159,6 +165,13 @@ export class UserService {
     const userList: User[] = [];
     users.forEach((user: any) => userList.push({ name: user.node.login }));
     return userList;
+  }
+
+  private reset() {
+    this.userListCursor = '';
+    this.userListHasNextPage = true;
+    this.totalCount = 0;
+    this.currentCount = 0;
   }
   // END: PRIVATE FUNCTIONS
 }
