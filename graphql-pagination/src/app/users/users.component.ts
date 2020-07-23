@@ -1,80 +1,128 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { UserService } from '../service/user.service';
-import { of, Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { FormControl } from '@angular/forms';
 import { User } from '../types/User';
+import { IonInfiniteScroll } from '@ionic/angular';
 
 @Component({
   selector: 'app-users',
   templateUrl: './users.component.html',
   styleUrls: ['./users.component.scss'],
 })
-export class UsersComponent implements OnInit {
+export class UsersComponent implements AfterViewInit, OnInit {
+  @ViewChild(IonInfiniteScroll) infiniteScroll!: IonInfiniteScroll;
   users!: Observable<User[]> | undefined;
   searchInput!: FormControl;
   searchText = '';
   totalCount = 0;
   currentCount = 0;
-  event!: any;
   loadingStatus = '';
+  filter!: FormControl;
+  searchHistory: string[] = [];
+  searchHistoryDropdown!: FormControl;
+  usersWatchQuerySubscription!: Subscription;
+  valuesUpdated = false;
+  selectedSearchHistory = '';
 
   constructor(private userService: UserService) {}
 
+  ngAfterViewInit() {
+    this.disableInfiniteScroll(true);
+  }
+
   ngOnInit() {
-    this.loadInitialUsers();
     this.searchInput = new FormControl();
+    this.filter = new FormControl();
+    this.searchHistoryDropdown = new FormControl();
+
+    this.searchHistoryDropdown.valueChanges.subscribe((value) => {
+      this.filter.setValue(value);
+    });
+
     this.searchInput.valueChanges.subscribe((value) => {
       this.searchText = value;
     });
   }
 
   async loadUsers(event: any) {
-    this.event = event;
-
+    this.valuesUpdated = false;
+    // Show loading status
     this.showFetchStatus();
 
+    // Load more if has next pages
     if (this.userService.usersHasNextPage) {
-      await this.loadMoreUsers();
+      await this.loadMoreUserConnections(this.filter.value);
     } else {
-      event.target.disabled = true;
+      this.disableInfiniteScroll(true);
     }
   }
 
-  private async loadMoreUsers() {
-    await this.userService.fetchUsers(true);
+  async applyFilter() {
+    const keyword = this.filter.value;
+    if (!keyword) {
+      return;
+    }
+    this.valuesUpdated = false;
+    await this.initialize(keyword);
+    this.disableInfiniteScroll(false);
+    // Look for keywords from history list
+    const existingKeyword = this.searchHistory.find((word) => word === keyword);
+    if (!existingKeyword) {
+      this.searchHistory.push(keyword);
+    }
+    // Auto select this keyword from the dropdown list
+    this.selectedSearchHistory = keyword;
   }
 
-  private async loadInitialUsers() {
-    await this.userService.fetchUsers();
+  private async loadMoreUserConnections(keyword: string) {
+    const userConnections = await this.userService.fetchUsers(keyword, true);
+    if (userConnections) {
+      this.updateValues(userConnections);
+    }
+  }
 
-    this.userService.usersWatchQuery.valueChanges.subscribe((usersData: any) => {
-      if (!this.userService.usersHasNextPage) {
-        this.event.target.disabled = true;
-        this.updateValues();
+  private async initialize(keyword: string) {
+    // Check if in cache
+    const cachedUserConnections = await this.userService.fetchUsers(keyword);
+    // Listen to value changes
+    this.initializeQuery();
+    // Load values from cache
+    if (cachedUserConnections) {
+      this.updateValues(cachedUserConnections);
+    }
+  }
+
+  private initializeQuery() {
+    this.userService.usersWatchQuery.valueChanges.subscribe((userConnections) => {
+      if (!userConnections || userConnections.loading) {
         return;
       }
-
-      if (!usersData.data || usersData.loading) {
-        return;
+      if (!this.valuesUpdated) {
+        this.updateValues(userConnections.data);
       }
-
-      this.users = this.userService.getUserResults(usersData.data);
-      this.updateValues();
     });
   }
 
-  private updateValues() {
+  private disableInfiniteScroll(disabled: boolean) {
+    this.infiniteScroll.disabled = disabled;
+  }
+
+  private updateValues(usersData: any) {
+    this.valuesUpdated = true;
+    this.users = this.userService.getUserResults(usersData);
     this.totalCount = this.userService.usersCount;
     this.currentCount = this.userService.fetchedCount;
-
-    if (this.event) {
-      this.event.target.complete();
-    }
+    this.infiniteScroll.complete();
   }
 
   private showFetchStatus() {
     const remainingCount: number = this.totalCount - this.currentCount;
     const fetchCount = remainingCount < this.userService.numberOfResult ? remainingCount : this.userService.numberOfResult;
     this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
+  }
+
+  selectedSearchHistoryValueChanged() {
+    this.applyFilter();
   }
 }
