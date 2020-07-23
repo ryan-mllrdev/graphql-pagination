@@ -80,7 +80,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
 
   private updateValues(userRepositoriesConnection: any) {
     this.valuesUpdated = true;
-    this.repositories = this.userRepositoryService.getUserRepositoriesConnection(userRepositoriesConnection);
+    this.repositories = this.userRepositoryService.getUserRepositories(userRepositoriesConnection);
     this.totalCount = this.userRepositoryService.repositoriesCount;
     this.currentCount = this.userRepositoryService.fetchedCount;
     this.infiniteScroll.complete();

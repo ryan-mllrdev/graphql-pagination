@@ -21,7 +21,7 @@ export class UserService {
   private apolloClient: ApolloClient<any>;
   private usersConnectionCache: any;
 
-  usersWatchQuery!: QueryRef<any>;
+  usersConnectionWatchedQuery!: QueryRef<any>;
 
   constructor(private apollo: Apollo, private queryService: QueryService) {
     this.apolloClient = apollo.getClient();
@@ -32,7 +32,7 @@ export class UserService {
       return await this.fetchMoreUsers();
     } else {
       try {
-        this.usersWatchQuery.setOptions({
+        this.usersConnectionWatchedQuery.setOptions({
           query: this.queryService.usersQuery,
           variables: {
             first: numberOfResult,
@@ -60,7 +60,7 @@ export class UserService {
     }
   }
 
-  getUserResults(usersConnection: any): Observable<User[]> | undefined {
+  getUsers(usersConnection: any): Observable<User[]> | undefined {
     if (!usersConnection.search) {
       return;
     }
@@ -109,7 +109,7 @@ export class UserService {
       };
 
       let newResults: any;
-      await this.usersWatchQuery.fetchMore({
+      await this.usersConnectionWatchedQuery.fetchMore({
         variables: queryVariables,
         updateQuery: (previousResult, { fetchMoreResult }) => {
           // search.edges
@@ -154,7 +154,7 @@ export class UserService {
   }
 
   private initializeQuery(queryVariables: any) {
-    this.usersWatchQuery = this.apollo.watchQuery<any>({
+    this.usersConnectionWatchedQuery = this.apollo.watchQuery<any>({
       query: this.queryService.usersQuery,
       variables: queryVariables,
       fetchPolicy: FETCH_POLICY,
