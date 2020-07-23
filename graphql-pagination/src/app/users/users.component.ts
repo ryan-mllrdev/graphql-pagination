@@ -19,7 +19,6 @@ export class UsersComponent implements AfterViewInit, OnInit {
   currentCount = 0;
   loadingStatus = '';
   filter!: FormControl;
-  subscribed = false;
   searchHistory: string[] = [];
   searchHistoryDropdown!: FormControl;
   usersWatchQuerySubscription!: Subscription;
@@ -72,8 +71,8 @@ export class UsersComponent implements AfterViewInit, OnInit {
     if (!existingKeyword) {
       this.searchHistory.push(keyword);
     }
+    // Auto select this keyword from the dropdown list
     this.selectedSearchHistory = keyword;
-    // this.searchHistoryDropdown.setValue(keyword);
   }
 
   private async loadMoreUserConnections(keyword: string) {
