@@ -1,7 +1,6 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { UserService } from '../service/user.service';
 import { Observable, Subscription } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { FormControl } from '@angular/forms';
 import { User } from '../types/User';
 import { IonInfiniteScroll } from '@ionic/angular';
@@ -22,9 +21,10 @@ export class UsersComponent implements AfterViewInit, OnInit {
   filter!: FormControl;
   subscribed = false;
   searchHistory: string[] = [];
-  selectedSearchHistory!: FormControl;
+  searchHistoryDropdown!: FormControl;
   usersWatchQuerySubscription!: Subscription;
   valuesUpdated = false;
+  selectedSearchHistory = '';
 
   constructor(private userService: UserService) {}
 
@@ -35,9 +35,9 @@ export class UsersComponent implements AfterViewInit, OnInit {
   ngOnInit() {
     this.searchInput = new FormControl();
     this.filter = new FormControl();
-    this.selectedSearchHistory = new FormControl();
+    this.searchHistoryDropdown = new FormControl();
 
-    this.selectedSearchHistory.valueChanges.subscribe((value) => {
+    this.searchHistoryDropdown.valueChanges.subscribe((value) => {
       this.filter.setValue(value);
     });
 
@@ -48,10 +48,12 @@ export class UsersComponent implements AfterViewInit, OnInit {
 
   async loadUsers(event: any) {
     this.valuesUpdated = false;
+    // Show loading status
     this.showFetchStatus();
 
+    // Load more if has next pages
     if (this.userService.usersHasNextPage) {
-      await this.loadMoreUsers(this.filter.value);
+      await this.loadMoreUserConnections(this.filter.value);
     } else {
       this.disableInfiniteScroll(true);
     }
@@ -65,35 +67,34 @@ export class UsersComponent implements AfterViewInit, OnInit {
     this.valuesUpdated = false;
     await this.initialize(keyword);
     this.disableInfiniteScroll(false);
+    // Look for keywords from history list
     const existingKeyword = this.searchHistory.find((word) => word === keyword);
     if (!existingKeyword) {
       this.searchHistory.push(keyword);
     }
+    this.selectedSearchHistory = keyword;
+    // this.searchHistoryDropdown.setValue(keyword);
   }
 
-  private async loadMoreUsers(keyword: string) {
-    const values = await this.userService.fetchUsers(keyword, true);
-    if (values) {
-      this.updateValues(values);
+  private async loadMoreUserConnections(keyword: string) {
+    const userConnections = await this.userService.fetchUsers(keyword, true);
+    if (userConnections) {
+      this.updateValues(userConnections);
     }
   }
 
   private async initialize(keyword: string) {
+    // Check if in cache
     const cachedUserConnections = await this.userService.fetchUsers(keyword);
-    this.unsubscribeFromQuery();
-    this.subscribeToQuery();
+    // Listen to value changes
+    this.initializeQuery();
+    // Load values from cache
     if (cachedUserConnections) {
       this.updateValues(cachedUserConnections);
     }
   }
 
-  private unsubscribeFromQuery() {
-    if (this.usersWatchQuerySubscription) {
-      this.usersWatchQuerySubscription.unsubscribe();
-    }
-  }
-
-  private subscribeToQuery() {
+  private initializeQuery() {
     this.userService.usersWatchQuery.valueChanges.subscribe((userConnections) => {
       if (!userConnections || userConnections.loading) {
         return;
@@ -120,5 +121,9 @@ export class UsersComponent implements AfterViewInit, OnInit {
     const remainingCount: number = this.totalCount - this.currentCount;
     const fetchCount = remainingCount < this.userService.numberOfResult ? remainingCount : this.userService.numberOfResult;
     this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
+  }
+
+  selectedSearchHistoryValueChanged() {
+    this.applyFilter();
   }
 }

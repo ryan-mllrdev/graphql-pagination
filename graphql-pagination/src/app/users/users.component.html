@@ -11,14 +11,14 @@
         <ion-button (click)="applyFilter()" shape="round">Apply</ion-button>
       </ion-item>
     </ion-item>
-    <!-- <ion-item lines="none">
-      <ion-select [formControl]="selectedSearchHistory" style="font-size: 1rem;" placeholder="None Selected"
-        okText="Okay" cancelText="Cancel">
+    <ion-item lines="none">
+      <ion-select [formControl]="searchHistoryDropdown" [(value)]="selectedSearchHistory" style="font-size: 1rem;"
+        placeholder="None Selected" (ionChange)="selectedSearchHistoryValueChanged()">
         <ion-label style="color:gray;">Search History</ion-label>
-        <ion-select-option *ngFor="let keyword of searchHistory" [value]="keyword">{{keyword}}</ion-select-option>
+        <ion-select-option *ngFor="let keyword of searchHistory">{{keyword}}</ion-select-option>
       </ion-select>
       <ion-text>Search History</ion-text>
-    </ion-item> -->
+    </ion-item>
 
     <ion-item lines="none">
       <ion-text>
