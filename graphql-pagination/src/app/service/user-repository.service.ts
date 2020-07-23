@@ -80,7 +80,7 @@ export class UserRepositoryService {
     this.currentCount = 0;
   }
 
-  getUserRepositoriesConnection(fetchResult: any): Observable<Repository[]> | undefined {
+  getUserRepositories(fetchResult: any): Observable<Repository[]> | undefined {
     if (!fetchResult) {
       return;
     }

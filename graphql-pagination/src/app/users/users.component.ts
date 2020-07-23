@@ -11,6 +11,7 @@ import { IonInfiniteScroll } from '@ionic/angular';
   styleUrls: ['./users.component.scss'],
 })
 export class UsersComponent implements AfterViewInit, OnInit {
+  private valuesUpdated = false;
   @ViewChild(IonInfiniteScroll) infiniteScroll!: IonInfiniteScroll;
   users!: Observable<User[]> | undefined;
   searchInput!: FormControl;
@@ -21,8 +22,6 @@ export class UsersComponent implements AfterViewInit, OnInit {
   filter!: FormControl;
   searchHistory: string[] = [];
   searchHistoryDropdown!: FormControl;
-  usersWatchQuerySubscription!: Subscription;
-  valuesUpdated = false;
   selectedSearchHistory = '';
 
   constructor(private userService: UserService) {}
@@ -75,6 +74,11 @@ export class UsersComponent implements AfterViewInit, OnInit {
     this.selectedSearchHistory = keyword;
   }
 
+  selectedSearchHistoryValueChanged() {
+    this.applyFilter();
+  }
+
+  // PRIVATE FUNCTIONS
   private async loadMoreUserConnections(keyword: string) {
     const userConnections = await this.userService.fetchUsers(keyword, true);
     if (userConnections) {
@@ -94,7 +98,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   private initializeQuery() {
-    this.userService.usersWatchQuery.valueChanges.subscribe((userConnections) => {
+    this.userService.usersConnectionWatchedQuery.valueChanges.subscribe((userConnections) => {
       if (!userConnections || userConnections.loading) {
         return;
       }
@@ -110,7 +114,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
 
   private updateValues(usersData: any) {
     this.valuesUpdated = true;
-    this.users = this.userService.getUserResults(usersData);
+    this.users = this.userService.getUsers(usersData);
     this.totalCount = this.userService.usersCount;
     this.currentCount = this.userService.fetchedCount;
     this.infiniteScroll.complete();
@@ -121,8 +125,5 @@ export class UsersComponent implements AfterViewInit, OnInit {
     const fetchCount = remainingCount < this.userService.numberOfResult ? remainingCount : this.userService.numberOfResult;
     this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
   }
-
-  selectedSearchHistoryValueChanged() {
-    this.applyFilter();
-  }
+  // END: PRIVATE FUNCTIONS
 }
