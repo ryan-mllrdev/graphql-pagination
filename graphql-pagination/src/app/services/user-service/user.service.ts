@@ -126,7 +126,7 @@ export class UserService {
           this.connectionHasNextPage = currentPageInfo.hasNextPage;
 
           // Merged previous and current results
-          const mergedUserNodes = [...currentUserNodes, ...previousUserNodes];
+          const mergedUserNodes = [...previousUserNodes, ...currentUserNodes];
 
           this.currentCount = mergedUserNodes.length;
 

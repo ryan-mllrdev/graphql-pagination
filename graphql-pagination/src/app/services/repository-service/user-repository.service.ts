@@ -139,7 +139,7 @@ export class UserRepositoryService {
           const currentPageInfo = currentUserRepositories.pageInfo;
 
           // Merged previous and current results
-          const currentMergedNodes = [...currentUserRepositoriesNodes, ...previousUserRepositoriesNodes];
+          const currentMergedNodes = [...previousUserRepositoriesNodes, ...currentUserRepositoriesNodes];
 
           this.currentCount = currentMergedNodes.length;
 
