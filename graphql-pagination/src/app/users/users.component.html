@@ -1,14 +1,17 @@
 <ion-grid>
   <ion-col size="12">
 
-    <ion-searchbar placeholder="Filter current results" [formControl]="searchInput"></ion-searchbar>
+    <ion-item *ngIf="users">
+      <ion-input placeholder="Filter current results" [formControl]="searchInput"></ion-input>
+    </ion-item>
 
     <ion-item lines="none">
       <ion-item class="ion-no-padding">
         <ion-input placeholder="Enter search keyword" clearInput [formControl]="filter"></ion-input>
       </ion-item>
       <ion-item lines="none" slot="end">
-        <ion-button (click)="applyFilter()" shape="round">Apply</ion-button>
+        <ion-button (click)="applyFilter()" shape="round" [disabled]="disableApplyButton || !filter.valid">Apply
+        </ion-button>
       </ion-item>
     </ion-item>
     <ion-item lines="none">
@@ -29,6 +32,7 @@
     <ion-list *ngFor="let user of users | async | ngSearchPipe:searchText" lines="none">
       <app-user [user]="user"></app-user>
     </ion-list>
+
   </ion-col>
 </ion-grid>
 

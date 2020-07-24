@@ -95,16 +95,16 @@ export class UserRepositoryService {
     this.repositoryConnectionCursor = pageInfo.endCursor;
     this.repositoryConnectionHasNextPage = pageInfo.hasNextPage;
 
-    // user.repositories.edges
-    const repositoryConnectionEdges = userRepositoriesConnection.edges;
+    // user.repositories.nodes
+    const repositoryConnectionNodes = userRepositoriesConnection.nodes;
 
     // user.repositories.totalCount
     this.totalCount = userRepositoriesConnection.totalCount;
 
-    this.currentCount = repositoryConnectionEdges.length;
+    this.currentCount = repositoryConnectionNodes.length;
 
     // Load results to an array of Repository type
-    const repositoryList: Repository[] = this.fetchResultsAsUserRepositories(repositoryConnectionEdges);
+    const repositoryList: Repository[] = this.fetchResultsAsUserRepositories(repositoryConnectionNodes);
 
     // Return as an observable
     return of(repositoryList);
@@ -143,9 +143,9 @@ export class UserRepositoryService {
           const previousUserRepositories = previousResult.user.repositories;
           const currentUserRepositories = fetchMoreResult.user.repositories;
 
-          // user.repositories.edges
-          const previousUserRepositoriesEdges = previousUserRepositories.edges;
-          const currentUserRepositoriesEdges = currentUserRepositories.edges;
+          // user.repositories.nodes
+          const previousUserRepositoriesNodes = previousUserRepositories.nodes;
+          const currentUserRepositoriesNodes = currentUserRepositories.nodes;
 
           // user.repositories.__typename
           // user.repositories.totalCount
@@ -156,9 +156,9 @@ export class UserRepositoryService {
           const currentPageInfo = currentUserRepositories.pageInfo;
 
           // Merged previous and current results
-          const currentMergedEdges = [...currentUserRepositoriesEdges, ...previousUserRepositoriesEdges];
+          const currentMergedNodes = [...currentUserRepositoriesNodes, ...previousUserRepositoriesNodes];
 
-          this.currentCount = currentMergedEdges.length;
+          this.currentCount = currentMergedNodes.length;
 
           // Update query with this new values
           newResults = {
@@ -167,7 +167,7 @@ export class UserRepositoryService {
               repositories: {
                 __typename: currentTypeName,
                 totalCount: currentTotalCount,
-                edges: currentMergedEdges,
+                nodes: currentMergedNodes,
                 pageInfo: currentPageInfo,
               },
             },
@@ -183,8 +183,12 @@ export class UserRepositoryService {
   }
 
   private fetchResultsAsUserRepositories(fetchResults: any): Repository[] {
-    const repositoryList: Repository[] = [];
-    fetchResults.forEach((repository: any) => repositoryList.push({ name: repository.node.name }));
+    const repositoryList: Repository[] = fetchResults.map((repository: any) => {
+      return {
+        name: repository.name,
+        url: repository.url,
+      };
+    });
     return repositoryList;
   }
   // END: PRIVATE FUNCTIONS

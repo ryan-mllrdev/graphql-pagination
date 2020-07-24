@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { UserRepositoryService } from '../service/user-repository.service';
 import { Repository } from '../types/Repository';
 import { IonInfiniteScroll } from '@ionic/angular';
+import { FormControl } from '@angular/forms';
 
 @Component({
   selector: 'app-repositories',
@@ -11,6 +12,7 @@ import { IonInfiniteScroll } from '@ionic/angular';
   styleUrls: ['./repositories.page.scss'],
 })
 export class RepositoriesPage implements OnInit, AfterViewInit {
+  searchInput!: FormControl;
   @ViewChild(IonInfiniteScroll) infiniteScroll!: IonInfiniteScroll;
   repositories!: Observable<Repository[]> | undefined;
   loginName = '';
@@ -19,6 +21,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   totalCount = 0;
   currentCount = 0;
   loadingStatus = '';
+  searchText = '';
   private valuesUpdated = false;
 
   constructor(private route: ActivatedRoute, private userRepositoryService: UserRepositoryService) {}
@@ -28,9 +31,14 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
+    this.searchInput = new FormControl();
     // tslint:disable-next-line: no-non-null-assertion
     this.loginName = this.route.snapshot.paramMap.get('login')!;
     this.initialize(this.loginName);
+
+    this.searchInput.valueChanges.subscribe((value) => {
+      this.searchText = value;
+    });
   }
 
   async loadRepositories(event: any) {

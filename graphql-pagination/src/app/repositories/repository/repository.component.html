@@ -1,3 +1,10 @@
 <ion-item color="light">
-  <ion-text>{{repository?.name}}</ion-text>
+  <ul class="ion-no-padding ion-no-margin">
+    <li id="name">
+      <ion-text color="secondary">{{repository?.name}}</ion-text>
+    </li>
+    <li id="url">
+      <a style="font-size:1rem;" color="medium" (click)="goToUrl()">{{repository?.url}}</a>
+    </li>
+  </ul>
 </ion-item>

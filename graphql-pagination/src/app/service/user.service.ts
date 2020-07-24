@@ -65,9 +65,9 @@ export class UserService {
       return;
     }
 
-    // search.edges
+    // search.nodes
     // search.pageInfo
-    const usersConnectionEdges = usersConnection.search.edges;
+    const usersConnectionNodes = usersConnection.search.nodes;
     const currentPageInfo = usersConnection.search.pageInfo;
 
     // pageInfo.endCursor
@@ -77,9 +77,9 @@ export class UserService {
     this.userListHasNextPage = currentPageInfo.hasNextPage;
     this.totalCount = usersConnection.search.userCount;
 
-    this.currentCount = usersConnectionEdges.length;
+    this.currentCount = usersConnectionNodes.length;
 
-    const userList: User[] = this.fetchResultsAsUsers(usersConnectionEdges);
+    const userList: User[] = this.fetchResultsAsUsers(usersConnectionNodes);
     return of(userList);
   }
 
@@ -112,9 +112,9 @@ export class UserService {
       await this.usersConnectionWatchedQuery.fetchMore({
         variables: queryVariables,
         updateQuery: (previousResult, { fetchMoreResult }) => {
-          // search.edges
-          const previousSearchEdges = previousResult.search.edges;
-          const currentSearchEdges = fetchMoreResult.search.edges;
+          // search.nodes
+          const previousUserNodes = previousResult.search.nodes;
+          const currentUserNodes = fetchMoreResult.search.nodes;
 
           // search.pageInfo
           // search.userCount
@@ -129,16 +129,16 @@ export class UserService {
           this.userListHasNextPage = currentPageInfo.hasNextPage;
 
           // Merged previous and current results
-          const mergeEdgesResult = [...currentSearchEdges, ...previousSearchEdges];
+          const mergedUserNodes = [...currentUserNodes, ...previousUserNodes];
 
-          this.currentCount = mergeEdgesResult.length;
+          this.currentCount = mergedUserNodes.length;
 
           // Return this result to update the query with the new values
           const newSearchResult: UserResult = {
             search: {
               __typename: typeName,
               userCount: currentUserCount,
-              edges: mergeEdgesResult,
+              nodes: mergedUserNodes,
               pageInfo: currentPageInfo,
             },
           };
@@ -162,8 +162,11 @@ export class UserService {
   }
 
   private fetchResultsAsUsers(users: any): User[] {
-    const userList: User[] = [];
-    users.forEach((user: any) => userList.push({ name: user.node.login }));
+    const userList: User[] = users.map((user: any) => {
+      return {
+        name: user.login,
+      };
+    });
     return userList;
   }
 

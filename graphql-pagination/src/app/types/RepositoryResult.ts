@@ -6,7 +6,7 @@ export type RepositoryResult = {
     repositories: {
       __typename: string;
       totalCount: number;
-      edges: any[];
+      nodes: any[];
       pageInfo: PageInfo;
     };
   };

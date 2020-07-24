@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { UserService } from '../service/user.service';
 import { Observable, Subscription } from 'rxjs';
-import { FormControl } from '@angular/forms';
+import { FormControl, Validators } from '@angular/forms';
 import { User } from '../types/User';
 import { IonInfiniteScroll } from '@ionic/angular';
 
@@ -23,6 +23,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   searchHistory: string[] = [];
   searchHistoryDropdown!: FormControl;
   selectedSearchHistory = '';
+  disableApplyButton = false;
 
   constructor(private userService: UserService) {}
 
@@ -32,7 +33,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
 
   ngOnInit() {
     this.searchInput = new FormControl();
-    this.filter = new FormControl();
+    this.filter = new FormControl('', { validators: Validators.required });
     this.searchHistoryDropdown = new FormControl();
 
     this.searchHistoryDropdown.valueChanges.subscribe((value) => {
@@ -45,6 +46,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   async loadUsers(event: any) {
+    this.disableApplyButton = true;
     this.valuesUpdated = false;
     // Show loading status
     this.showFetchStatus();
@@ -62,6 +64,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
     if (!keyword) {
       return;
     }
+    this.disableApplyButton = true;
     this.valuesUpdated = false;
     await this.initialize(keyword);
     this.disableInfiniteScroll(false);
@@ -118,6 +121,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
     this.totalCount = this.userService.usersCount;
     this.currentCount = this.userService.fetchedCount;
     this.infiniteScroll.complete();
+    this.disableApplyButton = false;
   }
 
   private showFetchStatus() {
