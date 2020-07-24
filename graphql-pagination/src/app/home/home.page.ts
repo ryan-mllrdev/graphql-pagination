@@ -12,10 +12,6 @@ export class HomePage implements OnInit {
 
   ngOnInit() {}
 
-  handleNewResults() {
-    this.content.scrollToBottom();
-  }
-
   backToTop() {
     this.content.scrollToTop();
   }
