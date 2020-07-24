@@ -6,18 +6,19 @@
     </ion-item>
 
     <ion-item lines="none">
+
       <ion-item class="ion-no-padding">
         <ion-input placeholder="Enter search keyword" clearInput [formControl]="filter"></ion-input>
       </ion-item>
       <ion-item lines="none" slot="end">
-        <ion-button (click)="applyFilter()" shape="round" [disabled]="fetchingData || !filter.valid">Apply
-        </ion-button>
+        <ion-button (click)="applyFilter()" shape="round" [disabled]="fetchingData || !filter.valid">Apply</ion-button>
       </ion-item>
     </ion-item>
+
     <ion-item lines="none">
-      <ion-select [formControl]="searchHistoryDropdown" [(value)]="selectedSearchHistory" style="font-size: 1rem;"
-        placeholder="None Selected" (ionChange)="selectedSearchHistoryValueChanged()">
-        <ion-label style="color:gray;">Search History</ion-label>
+      <ion-select [formControl]="searchHistoryDropdown" [(value)]="selectedSearchHistory" placeholder="None Selected"
+        (ionChange)="selectedSearchHistoryValueChanged()">
+        <ion-label>Search History</ion-label>
         <ion-select-option *ngFor="let keyword of searchHistory">{{keyword}}</ion-select-option>
       </ion-select>
       <ion-text>Search History</ion-text>
