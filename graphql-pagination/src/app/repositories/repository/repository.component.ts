@@ -12,4 +12,11 @@ export class RepositoryComponent implements OnInit {
   constructor() {}
 
   ngOnInit() {}
+
+  goToUrl() {
+    if (!this.repository || !this.repository?.url) {
+      return;
+    }
+    window.open(this.repository.url, '_blank');
+  }
 }

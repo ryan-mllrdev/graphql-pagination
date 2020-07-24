@@ -10,6 +10,10 @@
     </ion-item>
   </ion-header>
 
+  <ion-item *ngIf="repositories">
+    <ion-input placeholder="Filter current results" [formControl]="searchInput" clearInput></ion-input>
+  </ion-item>
+
   <ion-grid>
 
     <ion-item lines="none">
@@ -19,7 +23,7 @@
     </ion-item>
 
     <ion-col size="12">
-      <ion-list *ngFor="let repository of repositories | async" lines="none">
+      <ion-list *ngFor="let repository of repositories | async |ngSearchPipe:searchText" lines="none">
         <app-repository [repository]="repository"></app-repository>
       </ion-list>
     </ion-col>
@@ -30,3 +34,9 @@
     </ion-infinite-scroll-content>
   </ion-infinite-scroll>
 </ion-content>
+
+<ion-fab vertical="bottom" horizontal="start" slot="fixed" title="Back to top">
+  <ion-fab-button (click)="backToTop()">
+    <ion-icon name="arrow-up-circle"></ion-icon>
+  </ion-fab-button>
+</ion-fab>

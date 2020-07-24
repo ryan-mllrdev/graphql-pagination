@@ -4,7 +4,7 @@ export type UserResult = {
   search: {
     __typename: string;
     userCount: number;
-    edges: any[];
+    nodes: any[];
     pageInfo: PageInfo;
   };
 };

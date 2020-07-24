@@ -13,14 +13,11 @@ export class QueryService {
         search(query: $searchKeyword, type: USER, first: $first, after: $after) {
           __typename
           userCount
-          edges {
-            cursor
-            node {
-              ... on User {
-                id
-                email
-                login
-              }
+          nodes {
+            ... on User {
+              id
+              email
+              login
             }
           }
           pageInfo {
@@ -39,14 +36,29 @@ export class QueryService {
           repositories(first: $first, after: $after) {
             __typename
             totalCount
-            edges {
-              node {
-                name
-              }
+            nodes {
+              name
+              url
             }
             pageInfo {
               hasNextPage
               endCursor
+            }
+          }
+        }
+      }
+    `;
+  }
+
+  get githubGraphQLApiSchemasQuery() {
+    return gql`
+      {
+        __schema {
+          types {
+            kind
+            name
+            possibleTypes {
+              name
             }
           }
         }

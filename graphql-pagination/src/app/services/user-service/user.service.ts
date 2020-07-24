@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
-import { QueryService } from './queries.service';
+import { QueryService } from '../query-service/queries.service';
 import { of, Observable } from 'rxjs';
 import ApolloClient from 'apollo-client';
-import { UserResult } from '../types/UserResult';
-import { User } from '../types/User';
+import { UserResult } from '../../types/UserResult';
+import { User } from '../../types/User';
 
 const NUMBER_OF_RESULT = 10;
 const FETCH_POLICY = 'cache-first';
@@ -14,48 +14,45 @@ const FETCH_POLICY = 'cache-first';
 })
 export class UserService {
   private userListCursor = '';
-  private userListHasNextPage = true;
+  private connectionHasNextPage = true;
   private totalCount = 0;
   private currentCount = 0;
 
   private apolloClient: ApolloClient<any>;
   private usersConnectionCache: any;
 
-  usersConnectionWatchedQuery!: QueryRef<any>;
+  usersConnectionQuery!: QueryRef<any>;
 
   constructor(private apollo: Apollo, private queryService: QueryService) {
     this.apolloClient = apollo.getClient();
   }
 
   async fetchUsers(searchWord: string, fetchMore: boolean = false, numberOfResult: number = NUMBER_OF_RESULT) {
+    const queryVariables = {
+      first: numberOfResult,
+      searchKeyword: searchWord,
+    };
+
     if (fetchMore) {
+      // Fetching more users
       return await this.fetchMoreUsers();
     } else {
+      // Reading from cached data
       try {
-        this.usersConnectionWatchedQuery.setOptions({
-          query: this.queryService.usersQuery,
-          variables: {
-            first: numberOfResult,
-            searchKeyword: searchWord,
-          },
-        });
-
         // Try to read from cache
         this.usersConnectionCache = this.apolloClient.readQuery({
           query: this.queryService.usersQuery,
-          variables: {
-            first: numberOfResult,
-            searchKeyword: searchWord,
-          },
+          variables: queryVariables,
         });
+
+        // Update query variables
+        this.updateQueryVariables(queryVariables);
 
         return this.usersConnectionCache;
       } catch (error) {
+        // Initial request
         this.reset();
-        this.initializeQuery({
-          first: numberOfResult,
-          searchKeyword: searchWord,
-        });
+        this.initializeQuery(queryVariables);
       }
     }
   }
@@ -65,38 +62,38 @@ export class UserService {
       return;
     }
 
-    // search.edges
+    // search.nodes
     // search.pageInfo
-    const usersConnectionEdges = usersConnection.search.edges;
+    const usersConnectionNodes = usersConnection.search.nodes;
     const currentPageInfo = usersConnection.search.pageInfo;
 
     // pageInfo.endCursor
     // pageInfo.hasNextPage
     // search.userCount
     this.userListCursor = currentPageInfo.endCursor;
-    this.userListHasNextPage = currentPageInfo.hasNextPage;
+    this.connectionHasNextPage = currentPageInfo.hasNextPage;
     this.totalCount = usersConnection.search.userCount;
 
-    this.currentCount = usersConnectionEdges.length;
+    this.currentCount = usersConnectionNodes.length;
 
-    const userList: User[] = this.fetchResultsAsUsers(usersConnectionEdges);
+    const userList: User[] = this.mapUsers(usersConnectionNodes);
     return of(userList);
   }
 
   // GETTERS
-  get usersHasNextPage(): boolean {
-    return this.userListHasNextPage;
+  get hasNextPage(): boolean {
+    return this.connectionHasNextPage;
   }
 
-  get usersCount(): number {
+  get currentTotalCount(): number {
     return this.totalCount;
   }
 
-  get fetchedCount(): number {
+  get currentResultCount(): number {
     return this.currentCount;
   }
 
-  get numberOfResult(): number {
+  get defaultNumberOfResultToFetch(): number {
     return NUMBER_OF_RESULT;
   }
   // END: GETTERS
@@ -109,12 +106,12 @@ export class UserService {
       };
 
       let newResults: any;
-      await this.usersConnectionWatchedQuery.fetchMore({
+      await this.usersConnectionQuery.fetchMore({
         variables: queryVariables,
         updateQuery: (previousResult, { fetchMoreResult }) => {
-          // search.edges
-          const previousSearchEdges = previousResult.search.edges;
-          const currentSearchEdges = fetchMoreResult.search.edges;
+          // search.nodes
+          const previousUserNodes = previousResult.search.nodes;
+          const currentUserNodes = fetchMoreResult.search.nodes;
 
           // search.pageInfo
           // search.userCount
@@ -126,19 +123,19 @@ export class UserService {
           // pageInfo.endCursor
           // pageInfo.hasNextPage
           this.userListCursor = currentPageInfo.endCursor;
-          this.userListHasNextPage = currentPageInfo.hasNextPage;
+          this.connectionHasNextPage = currentPageInfo.hasNextPage;
 
           // Merged previous and current results
-          const mergeEdgesResult = [...currentSearchEdges, ...previousSearchEdges];
+          const mergedUserNodes = [...previousUserNodes, ...currentUserNodes];
 
-          this.currentCount = mergeEdgesResult.length;
+          this.currentCount = mergedUserNodes.length;
 
           // Return this result to update the query with the new values
           const newSearchResult: UserResult = {
             search: {
               __typename: typeName,
               userCount: currentUserCount,
-              edges: mergeEdgesResult,
+              nodes: mergedUserNodes,
               pageInfo: currentPageInfo,
             },
           };
@@ -154,22 +151,31 @@ export class UserService {
   }
 
   private initializeQuery(queryVariables: any) {
-    this.usersConnectionWatchedQuery = this.apollo.watchQuery<any>({
+    this.usersConnectionQuery = this.apollo.watchQuery<any>({
       query: this.queryService.usersQuery,
       variables: queryVariables,
       fetchPolicy: FETCH_POLICY,
     });
   }
 
-  private fetchResultsAsUsers(users: any): User[] {
-    const userList: User[] = [];
-    users.forEach((user: any) => userList.push({ name: user.node.login }));
+  private updateQueryVariables(queryVariables: {}) {
+    this.usersConnectionQuery.setOptions({
+      variables: queryVariables,
+    });
+  }
+
+  private mapUsers(users: any): User[] {
+    const userList: User[] = users.map((user: any) => {
+      return {
+        name: user.login,
+      };
+    });
     return userList;
   }
 
   private reset() {
     this.userListCursor = '';
-    this.userListHasNextPage = true;
+    this.connectionHasNextPage = true;
     this.totalCount = 0;
     this.currentCount = 0;
   }

@@ -1,11 +1,8 @@
-@import '../../../global.scss';
-
 ion-item {
   border-top-left-radius: 1rem;
   border-bottom-style: solid;
   border-bottom-color: white;
   ion-text {
-    color: $secondary;
     font-style: italic;
   }
 }
