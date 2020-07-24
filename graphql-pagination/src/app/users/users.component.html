@@ -10,7 +10,7 @@
         <ion-input placeholder="Enter search keyword" clearInput [formControl]="filter"></ion-input>
       </ion-item>
       <ion-item lines="none" slot="end">
-        <ion-button (click)="applyFilter()" shape="round" [disabled]="disableApplyButton || !filter.valid">Apply
+        <ion-button (click)="applyFilter()" shape="round" [disabled]="fetchingData || !filter.valid">Apply
         </ion-button>
       </ion-item>
     </ion-item>

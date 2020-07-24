@@ -25,7 +25,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   searchHistory: string[] = [];
   searchHistoryDropdown!: FormControl;
   selectedSearchHistory = '';
-  disableApplyButton = false;
+  fetchingData = false;
 
   @ViewChild(IonInfiniteScroll) infiniteScroll!: IonInfiniteScroll;
 
@@ -48,7 +48,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   async loadUsers(event: any) {
-    this.disableApplyButton = true;
+    this.fetchingData = true;
     this.valuesUpdated = false;
     // Show loading status
     this.showFetchStatus();
@@ -58,6 +58,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
       await this.loadMoreUserConnections(this.filter.value);
     } else {
       this.disableInfiniteScroll(true);
+      this.fetchingData = false;
     }
   }
 
@@ -66,7 +67,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
     if (!keyword) {
       return;
     }
-    this.disableApplyButton = true;
+    this.fetchingData = true;
     this.valuesUpdated = false;
     await this.initialize(keyword);
     this.disableInfiniteScroll(false);
@@ -123,7 +124,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
     this.totalCount = this.userService.currentTotalCount;
     this.currentCount = this.userService.currentResultCount;
     this.infiniteScroll.complete();
-    this.disableApplyButton = false;
+    this.fetchingData = false;
   }
 
   private showFetchStatus() {
