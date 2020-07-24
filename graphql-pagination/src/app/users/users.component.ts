@@ -1,9 +1,9 @@
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit, Input, Output, EventEmitter } from '@angular/core';
 import { UserService } from '../service/user.service';
-import { Observable, Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
 import { FormControl, Validators } from '@angular/forms';
 import { User } from '../types/User';
-import { IonInfiniteScroll } from '@ionic/angular';
+import { IonInfiniteScroll, IonContent } from '@ionic/angular';
 
 @Component({
   selector: 'app-users',
@@ -11,8 +11,10 @@ import { IonInfiniteScroll } from '@ionic/angular';
   styleUrls: ['./users.component.scss'],
 })
 export class UsersComponent implements AfterViewInit, OnInit {
+  constructor(private userService: UserService) {}
+
   private valuesUpdated = false;
-  @ViewChild(IonInfiniteScroll) infiniteScroll!: IonInfiniteScroll;
+
   users!: Observable<User[]> | undefined;
   searchInput!: FormControl;
   searchText = '';
@@ -25,7 +27,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   selectedSearchHistory = '';
   disableApplyButton = false;
 
-  constructor(private userService: UserService) {}
+  @ViewChild(IonInfiniteScroll) infiniteScroll!: IonInfiniteScroll;
 
   ngAfterViewInit() {
     this.disableInfiniteScroll(true);
@@ -52,7 +54,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
     this.showFetchStatus();
 
     // Load more if has next pages
-    if (this.userService.usersHasNextPage) {
+    if (this.userService.hasNextPage) {
       await this.loadMoreUserConnections(this.filter.value);
     } else {
       this.disableInfiniteScroll(true);
@@ -101,7 +103,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   private initializeQuery() {
-    this.userService.usersConnectionWatchedQuery.valueChanges.subscribe((userConnections) => {
+    this.userService.usersConnectionQuery.valueChanges.subscribe((userConnections) => {
       if (!userConnections || userConnections.loading) {
         return;
       }
@@ -118,15 +120,16 @@ export class UsersComponent implements AfterViewInit, OnInit {
   private updateValues(usersData: any) {
     this.valuesUpdated = true;
     this.users = this.userService.getUsers(usersData);
-    this.totalCount = this.userService.usersCount;
-    this.currentCount = this.userService.fetchedCount;
+    this.totalCount = this.userService.currentTotalCount;
+    this.currentCount = this.userService.currentResultCount;
     this.infiniteScroll.complete();
     this.disableApplyButton = false;
   }
 
   private showFetchStatus() {
     const remainingCount: number = this.totalCount - this.currentCount;
-    const fetchCount = remainingCount < this.userService.numberOfResult ? remainingCount : this.userService.numberOfResult;
+    const fetchCount =
+      remainingCount < this.userService.defaultNumberOfResultToFetch ? remainingCount : this.userService.defaultNumberOfResultToFetch;
     this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
   }
   // END: PRIVATE FUNCTIONS

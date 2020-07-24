@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 import { UserRepositoryService } from '../service/user-repository.service';
 import { Repository } from '../types/Repository';
-import { IonInfiniteScroll } from '@ionic/angular';
+import { IonInfiniteScroll, IonContent } from '@ionic/angular';
 import { FormControl } from '@angular/forms';
 
 @Component({
@@ -23,6 +23,8 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   loadingStatus = '';
   searchText = '';
   private valuesUpdated = false;
+
+  @ViewChild(IonContent) content!: IonContent;
 
   constructor(private route: ActivatedRoute, private userRepositoryService: UserRepositoryService) {}
 
@@ -54,6 +56,10 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
     }
   }
 
+  backToTop() {
+    this.content.scrollToTop();
+  }
+
   // PRIVATE FUNCTIONS
   private async initialize(loginName: string) {
     this.valuesUpdated = false;
@@ -69,7 +75,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   }
 
   private initializeQuery() {
-    this.userRepositoryService.userRepositoriesConnectionWatchedQuery.valueChanges.subscribe((userRepositoriesConnection) => {
+    this.userRepositoryService.userRepositoriesConnectionQuery.valueChanges.subscribe((userRepositoriesConnection) => {
       if (!userRepositoriesConnection || userRepositoriesConnection.loading) {
         return;
       }

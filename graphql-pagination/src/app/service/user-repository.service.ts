@@ -14,15 +14,14 @@ const FETCH_POLICY = 'cache-first';
 })
 export class UserRepositoryService {
   private repositoryConnectionCursor = '';
-  private repositoryConnectionHasNextPage = false;
+  private connectionHasNextPage = false;
   private totalCount = 0;
   private currentCount = 0;
-  private queryVariables: any = {};
-  private userRepositoriesConnectionCache: any;
+  private cacheData: any;
 
   private apolloClient!: ApolloClient<any>;
 
-  userRepositoriesConnectionWatchedQuery!: QueryRef<any>;
+  userRepositoriesConnectionQuery!: QueryRef<any>;
 
   constructor(private apollo: Apollo, private queryService: QueryService) {
     this.apolloClient = apollo.getClient();
@@ -34,10 +33,10 @@ export class UserRepositoryService {
     }
 
     if (fetchMore) {
-      return await this.fetchMoreUserRepositoriesConnection();
+      return await this.fetchMoreUserRepositories();
     } else {
       try {
-        this.userRepositoriesConnectionWatchedQuery.setOptions({
+        this.userRepositoriesConnectionQuery.setOptions({
           query: this.queryService.userRepositoriesQuery,
           variables: {
             first: numberOfResult,
@@ -46,7 +45,7 @@ export class UserRepositoryService {
         });
 
         // Try to read from cache
-        this.userRepositoriesConnectionCache = this.apolloClient.readQuery({
+        this.cacheData = this.apolloClient.readQuery({
           query: this.queryService.userRepositoriesQuery,
           variables: {
             first: numberOfResult,
@@ -54,7 +53,7 @@ export class UserRepositoryService {
           },
         });
 
-        return this.userRepositoriesConnectionCache;
+        return this.cacheData;
       } catch (error) {
         this.reset();
         this.initializeQuery({
@@ -66,7 +65,7 @@ export class UserRepositoryService {
   }
 
   private initializeQuery(queryVariables: any) {
-    this.userRepositoriesConnectionWatchedQuery = this.apollo.watchQuery<any>({
+    this.userRepositoriesConnectionQuery = this.apollo.watchQuery<any>({
       query: this.queryService.userRepositoriesQuery,
       variables: queryVariables,
       fetchPolicy: FETCH_POLICY,
@@ -75,7 +74,7 @@ export class UserRepositoryService {
 
   private reset() {
     this.repositoryConnectionCursor = '';
-    this.repositoryConnectionHasNextPage = true;
+    this.connectionHasNextPage = true;
     this.totalCount = 0;
     this.currentCount = 0;
   }
@@ -93,7 +92,7 @@ export class UserRepositoryService {
     // pageInfo.endCursor
     // pageInfo.hasNextPage
     this.repositoryConnectionCursor = pageInfo.endCursor;
-    this.repositoryConnectionHasNextPage = pageInfo.hasNextPage;
+    this.connectionHasNextPage = pageInfo.hasNextPage;
 
     // user.repositories.nodes
     const repositoryConnectionNodes = userRepositoriesConnection.nodes;
@@ -104,7 +103,7 @@ export class UserRepositoryService {
     this.currentCount = repositoryConnectionNodes.length;
 
     // Load results to an array of Repository type
-    const repositoryList: Repository[] = this.fetchResultsAsUserRepositories(repositoryConnectionNodes);
+    const repositoryList: Repository[] = this.mapUserRepositories(repositoryConnectionNodes);
 
     // Return as an observable
     return of(repositoryList);
@@ -112,7 +111,7 @@ export class UserRepositoryService {
 
   // GETTERS
   get userRepositoriesHasNextPage(): boolean {
-    return this.repositoryConnectionHasNextPage;
+    return this.connectionHasNextPage;
   }
 
   get repositoriesCount(): number {
@@ -129,14 +128,14 @@ export class UserRepositoryService {
   // END: GETTERS
 
   // PRIVATE FUNCTIONS
-  private async fetchMoreUserRepositoriesConnection() {
+  private async fetchMoreUserRepositories() {
     try {
       const queryVariables = {
         after: this.repositoryConnectionCursor,
       };
 
       let newResults!: RepositoryResult;
-      await this.userRepositoriesConnectionWatchedQuery.fetchMore({
+      await this.userRepositoriesConnectionQuery.fetchMore({
         variables: queryVariables,
         updateQuery: (previousResult, { fetchMoreResult }) => {
           // user.repositories
@@ -182,7 +181,7 @@ export class UserRepositoryService {
     return null;
   }
 
-  private fetchResultsAsUserRepositories(fetchResults: any): Repository[] {
+  private mapUserRepositories(fetchResults: any): Repository[] {
     const repositoryList: Repository[] = fetchResults.map((repository: any) => {
       return {
         name: repository.name,

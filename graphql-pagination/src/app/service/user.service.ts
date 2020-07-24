@@ -14,14 +14,14 @@ const FETCH_POLICY = 'cache-first';
 })
 export class UserService {
   private userListCursor = '';
-  private userListHasNextPage = true;
+  private connectionHasNextPage = true;
   private totalCount = 0;
   private currentCount = 0;
 
   private apolloClient: ApolloClient<any>;
   private usersConnectionCache: any;
 
-  usersConnectionWatchedQuery!: QueryRef<any>;
+  usersConnectionQuery!: QueryRef<any>;
 
   constructor(private apollo: Apollo, private queryService: QueryService) {
     this.apolloClient = apollo.getClient();
@@ -32,7 +32,7 @@ export class UserService {
       return await this.fetchMoreUsers();
     } else {
       try {
-        this.usersConnectionWatchedQuery.setOptions({
+        this.usersConnectionQuery.setOptions({
           query: this.queryService.usersQuery,
           variables: {
             first: numberOfResult,
@@ -74,29 +74,29 @@ export class UserService {
     // pageInfo.hasNextPage
     // search.userCount
     this.userListCursor = currentPageInfo.endCursor;
-    this.userListHasNextPage = currentPageInfo.hasNextPage;
+    this.connectionHasNextPage = currentPageInfo.hasNextPage;
     this.totalCount = usersConnection.search.userCount;
 
     this.currentCount = usersConnectionNodes.length;
 
-    const userList: User[] = this.fetchResultsAsUsers(usersConnectionNodes);
+    const userList: User[] = this.mapUsers(usersConnectionNodes);
     return of(userList);
   }
 
   // GETTERS
-  get usersHasNextPage(): boolean {
-    return this.userListHasNextPage;
+  get hasNextPage(): boolean {
+    return this.connectionHasNextPage;
   }
 
-  get usersCount(): number {
+  get currentTotalCount(): number {
     return this.totalCount;
   }
 
-  get fetchedCount(): number {
+  get currentResultCount(): number {
     return this.currentCount;
   }
 
-  get numberOfResult(): number {
+  get defaultNumberOfResultToFetch(): number {
     return NUMBER_OF_RESULT;
   }
   // END: GETTERS
@@ -109,7 +109,7 @@ export class UserService {
       };
 
       let newResults: any;
-      await this.usersConnectionWatchedQuery.fetchMore({
+      await this.usersConnectionQuery.fetchMore({
         variables: queryVariables,
         updateQuery: (previousResult, { fetchMoreResult }) => {
           // search.nodes
@@ -126,7 +126,7 @@ export class UserService {
           // pageInfo.endCursor
           // pageInfo.hasNextPage
           this.userListCursor = currentPageInfo.endCursor;
-          this.userListHasNextPage = currentPageInfo.hasNextPage;
+          this.connectionHasNextPage = currentPageInfo.hasNextPage;
 
           // Merged previous and current results
           const mergedUserNodes = [...currentUserNodes, ...previousUserNodes];
@@ -154,14 +154,14 @@ export class UserService {
   }
 
   private initializeQuery(queryVariables: any) {
-    this.usersConnectionWatchedQuery = this.apollo.watchQuery<any>({
+    this.usersConnectionQuery = this.apollo.watchQuery<any>({
       query: this.queryService.usersQuery,
       variables: queryVariables,
       fetchPolicy: FETCH_POLICY,
     });
   }
 
-  private fetchResultsAsUsers(users: any): User[] {
+  private mapUsers(users: any): User[] {
     const userList: User[] = users.map((user: any) => {
       return {
         name: user.login,
@@ -172,7 +172,7 @@ export class UserService {
 
   private reset() {
     this.userListCursor = '';
-    this.userListHasNextPage = true;
+    this.connectionHasNextPage = true;
     this.totalCount = 0;
     this.currentCount = 0;
   }
