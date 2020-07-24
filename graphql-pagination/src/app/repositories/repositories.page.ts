@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
-import { UserRepositoryService } from '../service/user-repository.service';
+import { UserRepositoryService } from '../services/repository-service/user-repository.service';
 import { Repository } from '../types/Repository';
 import { IonInfiniteScroll, IonContent } from '@ionic/angular';
 import { FormControl } from '@angular/forms';

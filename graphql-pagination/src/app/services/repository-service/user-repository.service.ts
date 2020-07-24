@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
-import { QueryService } from './queries.service';
+import { QueryService } from '../query-service/queries.service';
 import { of, Observable } from 'rxjs';
-import { RepositoryResult } from '../types/RepositoryResult';
-import { Repository } from '../types/Repository';
+import { RepositoryResult } from '../../types/RepositoryResult';
+import { Repository } from '../../types/Repository';
 import ApolloClient from 'apollo-client';
 
 const NUMBER_OF_RESULT = 10;
@@ -32,18 +32,17 @@ export class UserRepositoryService {
       return;
     }
 
+    const queryVariables = {
+      first: numberOfResult,
+      login: loginName,
+    };
+
     if (fetchMore) {
+      // Fetch more repositories
       return await this.fetchMoreUserRepositories();
     } else {
+      // Read from cached data
       try {
-        this.userRepositoriesConnectionQuery.setOptions({
-          query: this.queryService.userRepositoriesQuery,
-          variables: {
-            first: numberOfResult,
-            login: loginName,
-          },
-        });
-
         // Try to read from cache
         this.cacheData = this.apolloClient.readQuery({
           query: this.queryService.userRepositoriesQuery,
@@ -53,30 +52,15 @@ export class UserRepositoryService {
           },
         });
 
+        this.updateQueryVariables(queryVariables);
+
         return this.cacheData;
       } catch (error) {
+        // Initial request
         this.reset();
-        this.initializeQuery({
-          first: numberOfResult,
-          login: loginName,
-        });
+        this.initializeQuery(queryVariables);
       }
     }
-  }
-
-  private initializeQuery(queryVariables: any) {
-    this.userRepositoriesConnectionQuery = this.apollo.watchQuery<any>({
-      query: this.queryService.userRepositoriesQuery,
-      variables: queryVariables,
-      fetchPolicy: FETCH_POLICY,
-    });
-  }
-
-  private reset() {
-    this.repositoryConnectionCursor = '';
-    this.connectionHasNextPage = true;
-    this.totalCount = 0;
-    this.currentCount = 0;
   }
 
   getUserRepositories(fetchResult: any): Observable<Repository[]> | undefined {
@@ -179,6 +163,28 @@ export class UserRepositoryService {
       console.log(error);
     }
     return null;
+  }
+
+  private updateQueryVariables(queryVariables: {}) {
+    this.userRepositoriesConnectionQuery.setOptions({
+      query: this.queryService.userRepositoriesQuery,
+      variables: queryVariables,
+    });
+  }
+
+  private initializeQuery(queryVariables: any) {
+    this.userRepositoriesConnectionQuery = this.apollo.watchQuery<any>({
+      query: this.queryService.userRepositoriesQuery,
+      variables: queryVariables,
+      fetchPolicy: FETCH_POLICY,
+    });
+  }
+
+  private reset() {
+    this.repositoryConnectionCursor = '';
+    this.connectionHasNextPage = true;
+    this.totalCount = 0;
+    this.currentCount = 0;
   }
 
   private mapUserRepositories(fetchResults: any): Repository[] {

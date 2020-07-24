@@ -1,9 +1,9 @@
 import { Component, OnInit, ViewChild, AfterViewInit, Input, Output, EventEmitter } from '@angular/core';
-import { UserService } from '../service/user.service';
+import { UserService } from '../services/user-service/user.service';
 import { Observable } from 'rxjs';
 import { FormControl, Validators } from '@angular/forms';
 import { User } from '../types/User';
-import { IonInfiniteScroll, IonContent } from '@ionic/angular';
+import { IonInfiniteScroll } from '@ionic/angular';
 
 @Component({
   selector: 'app-users',

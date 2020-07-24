@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
-import { QueryService } from './queries.service';
+import { QueryService } from '../query-service/queries.service';
 import { of, Observable } from 'rxjs';
 import ApolloClient from 'apollo-client';
-import { UserResult } from '../types/UserResult';
-import { User } from '../types/User';
+import { UserResult } from '../../types/UserResult';
+import { User } from '../../types/User';
 
 const NUMBER_OF_RESULT = 10;
 const FETCH_POLICY = 'cache-first';
@@ -28,34 +28,31 @@ export class UserService {
   }
 
   async fetchUsers(searchWord: string, fetchMore: boolean = false, numberOfResult: number = NUMBER_OF_RESULT) {
+    const queryVariables = {
+      first: numberOfResult,
+      searchKeyword: searchWord,
+    };
+
     if (fetchMore) {
+      // Fetching more users
       return await this.fetchMoreUsers();
     } else {
+      // Reading from cached data
       try {
-        this.usersConnectionQuery.setOptions({
-          query: this.queryService.usersQuery,
-          variables: {
-            first: numberOfResult,
-            searchKeyword: searchWord,
-          },
-        });
-
         // Try to read from cache
         this.usersConnectionCache = this.apolloClient.readQuery({
           query: this.queryService.usersQuery,
-          variables: {
-            first: numberOfResult,
-            searchKeyword: searchWord,
-          },
+          variables: queryVariables,
         });
+
+        // Update query variables
+        this.updateQueryVariables(queryVariables);
 
         return this.usersConnectionCache;
       } catch (error) {
+        // Initial request
         this.reset();
-        this.initializeQuery({
-          first: numberOfResult,
-          searchKeyword: searchWord,
-        });
+        this.initializeQuery(queryVariables);
       }
     }
   }
@@ -158,6 +155,12 @@ export class UserService {
       query: this.queryService.usersQuery,
       variables: queryVariables,
       fetchPolicy: FETCH_POLICY,
+    });
+  }
+
+  private updateQueryVariables(queryVariables: {}) {
+    this.usersConnectionQuery.setOptions({
+      variables: queryVariables,
     });
   }
 
