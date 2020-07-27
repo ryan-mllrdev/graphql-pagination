@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { Repository } from 'src/app/types/Repository';
+import { Repository } from '../../core/types/Repository';
 
 @Component({
   selector: 'app-repository',

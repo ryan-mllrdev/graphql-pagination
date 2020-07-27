@@ -1,9 +1,10 @@
-import { Component, OnInit, ViewChild, AfterViewInit, Input, Output, EventEmitter } from '@angular/core';
-import { UserService } from '../services/user-service/user.service';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { UserService } from '../core/services/user-service/user.service';
 import { Observable } from 'rxjs';
 import { FormControl, Validators } from '@angular/forms';
-import { User } from '../types/User';
 import { IonInfiniteScroll } from '@ionic/angular';
+import { UserFetchResult } from '../core/types/UserFetchResult';
+import { User } from '../core/types/User';
 
 @Component({
   selector: 'app-users',
@@ -108,6 +109,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
       if (!userConnections || userConnections.loading) {
         return;
       }
+
       if (!this.valuesUpdated) {
         this.updateValues(userConnections.data);
       }
@@ -118,9 +120,9 @@ export class UsersComponent implements AfterViewInit, OnInit {
     this.infiniteScroll.disabled = disabled;
   }
 
-  private updateValues(usersData: any) {
+  private updateValues(usersConnection: UserFetchResult) {
     this.valuesUpdated = true;
-    this.users = this.userService.getUsers(usersData);
+    this.users = this.userService.populateUsers(usersConnection.search);
     this.totalCount = this.userService.currentTotalCount;
     this.currentCount = this.userService.currentResultCount;
     this.infiniteScroll.complete();
@@ -129,8 +131,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
 
   private showFetchStatus() {
     const remainingCount: number = this.totalCount - this.currentCount;
-    const fetchCount =
-      remainingCount < this.userService.defaultNumberOfResultToFetch ? remainingCount : this.userService.defaultNumberOfResultToFetch;
+    const fetchCount = remainingCount < this.userService.numberOfResultToFetch ?? remainingCount ?? this.userService.numberOfResultToFetch;
     this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
   }
   // END: PRIVATE FUNCTIONS

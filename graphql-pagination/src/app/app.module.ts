@@ -8,7 +8,7 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
-import { GraphQLModule } from './apollo.config';
+import { GraphQLModule } from './graphql/graphql.module';
 
 import { ReactiveFormsModule } from '@angular/forms';
 
