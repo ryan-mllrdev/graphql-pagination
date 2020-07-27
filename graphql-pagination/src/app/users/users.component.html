@@ -1,8 +1,7 @@
 <ion-grid>
   <ion-col size="12">
-
     <ion-item *ngIf="users">
-      <ion-input placeholder="Filter current results" [formControl]="searchInput"></ion-input>
+      <ion-input placeholder="Filter current results" [formControl]="searchInput" clearInput></ion-input>
     </ion-item>
 
     <ion-item lines="none">
@@ -34,10 +33,9 @@
       <app-user [user]="user"></app-user>
     </ion-list>
 
+    <ion-infinite-scroll (ionInfinite)="loadUsers($event)">
+      <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText={{loadingStatus}}>
+      </ion-infinite-scroll-content>
+    </ion-infinite-scroll>
   </ion-col>
 </ion-grid>
-
-<ion-infinite-scroll (ionInfinite)="loadUsers($event)">
-  <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText={{loadingStatus}}>
-  </ion-infinite-scroll-content>
-</ion-infinite-scroll>

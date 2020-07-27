@@ -5,8 +5,11 @@
   "homepage": "https://ionicframework.com/",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
+    "config": "ts-node ./scripts/setenv.ts",
+    "start": "npm run config -- --environment=dev && ng serve",
+    "build": "npm run config -- --environment=prod && ng build",
+    "ion-start": "npm run config -- --environment=dev && ionic serve",
+    "ion-build": "npm run config -- --environment=prod && ionic build",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
@@ -49,6 +52,7 @@
     "@types/jasminewd2": "~2.0.3",
     "@types/node": "^12.11.1",
     "codelyzer": "^5.1.2",
+    "dotenv": "^8.2.0",
     "jasmine-core": "~3.5.0",
     "jasmine-spec-reporter": "~4.2.1",
     "karma": "~5.0.0",
@@ -61,7 +65,8 @@
     "tslint": "~6.1.0",
     "tslint-config-airbnb": "^5.11.2",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "~3.8.3"
+    "typescript": "~3.8.3",
+    "yargs": "^15.4.1"
   },
   "description": "An Ionic project"
 }

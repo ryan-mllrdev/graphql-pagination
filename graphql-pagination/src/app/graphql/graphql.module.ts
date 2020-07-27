@@ -6,7 +6,8 @@ import { HttpLink, HttpLinkModule } from 'apollo-angular-link-http';
 import { InMemoryCache, IntrospectionFragmentMatcher } from 'apollo-cache-inmemory';
 import { setContext } from 'apollo-link-context';
 import { ApolloLink } from 'apollo-link';
-
+import { QueryService } from '../core/services/query-service/queries.service';
+import { environment } from '../../environments/environment';
 const uri = 'https://api.github.com/graphql';
 
 export function provideApollo(httpLink: HttpLink) {
@@ -16,7 +17,7 @@ export function provideApollo(httpLink: HttpLink) {
     },
   }));
 
-  const token = '';
+  const token = environment.GITHUB_API_TOKEN;
   const auth = setContext((operation, context) => ({
     headers: {
       Authorization: `Bearer ${token}`,
@@ -47,7 +48,6 @@ export function provideApollo(httpLink: HttpLink) {
 
   const cache = new InMemoryCache({
     fragmentMatcher: introspectionFragmentMatcher,
-    resultCaching: true,
   });
 
   return {

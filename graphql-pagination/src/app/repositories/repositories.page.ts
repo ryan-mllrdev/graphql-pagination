@@ -1,10 +1,12 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
-import { UserRepositoryService } from '../services/repository-service/user-repository.service';
-import { Repository } from '../types/Repository';
+import { UserRepositoryService } from '../core/services/repository-service/user-repository.service';
+import { Repository } from '../core/types/Repository';
 import { IonInfiniteScroll, IonContent } from '@ionic/angular';
 import { FormControl } from '@angular/forms';
+import { RepositoryConnection } from 'src/generated/graphql';
+import { RepositoryFetchResult } from '../core/types/RepositoryFetchResult';
 
 @Component({
   selector: 'app-repositories',
@@ -64,7 +66,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   private async initialize(loginName: string) {
     this.valuesUpdated = false;
     // Check if in cache
-    const cachedUserRepositoriesConnection = await this.userRepositoryService.fetchUserRepositoriesConnection(loginName);
+    const cachedUserRepositoriesConnection = await this.userRepositoryService.fetchUserRepositories(loginName);
     // Listen to value changes
     this.initializeQuery();
     // Load values from cache
@@ -75,7 +77,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   }
 
   private initializeQuery() {
-    this.userRepositoryService.userRepositoriesConnectionQuery.valueChanges.subscribe((userRepositoriesConnection) => {
+    this.userRepositoryService.repositoryConnectionQuery.valueChanges.subscribe((userRepositoriesConnection) => {
       if (!userRepositoriesConnection || userRepositoriesConnection.loading) {
         return;
       }
@@ -86,15 +88,15 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   }
 
   private async loadMoreUserRepositoriesConnection(loginName: string) {
-    const userRepositoriesConnection = await this.userRepositoryService.fetchUserRepositoriesConnection(loginName, true);
+    const userRepositoriesConnection = await this.userRepositoryService.fetchUserRepositories(loginName, true);
     if (userRepositoriesConnection) {
       this.updateValues(userRepositoriesConnection);
     }
   }
 
-  private updateValues(userRepositoriesConnection: any) {
+  private updateValues(userRepositoriesConnection: RepositoryFetchResult) {
     this.valuesUpdated = true;
-    this.repositories = this.userRepositoryService.getUserRepositories(userRepositoriesConnection);
+    this.repositories = this.userRepositoryService.populateRepositories(userRepositoriesConnection);
     this.totalCount = this.userRepositoryService.repositoriesCount;
     this.currentCount = this.userRepositoryService.fetchedCount;
     this.infiniteScroll.complete();
@@ -103,7 +105,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   private showFetchStatus() {
     const remainingCount: number = this.totalCount - this.currentCount;
     const fetchCount =
-      remainingCount < this.userRepositoryService.numberOfResult ? remainingCount : this.userRepositoryService.numberOfResult;
+      remainingCount < this.userRepositoryService.numberOfResultToFetch ? remainingCount : this.userRepositoryService.numberOfResultToFetch;
     this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
   }
 

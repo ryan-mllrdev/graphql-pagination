@@ -29,7 +29,7 @@ export class QueryService {
     `;
   }
 
-  get userRepositoriesQuery() {
+  get repositoriesQuery() {
     return gql`
       query UserRepositories($login: String!, $first: Int!, $after: String) {
         user(login: $login) {
