@@ -6,8 +6,9 @@ import { HttpLink, HttpLinkModule } from 'apollo-angular-link-http';
 import { InMemoryCache, IntrospectionFragmentMatcher } from 'apollo-cache-inmemory';
 import { setContext } from 'apollo-link-context';
 import { ApolloLink } from 'apollo-link';
-import { QueryService } from '../core/services/query-service/queries.service';
 import { environment } from '../../environments/environment';
+import result from '../../generated/graphql';
+
 const uri = 'https://api.github.com/graphql';
 
 export function provideApollo(httpLink: HttpLink) {
@@ -33,17 +34,7 @@ export function provideApollo(httpLink: HttpLink) {
   ]);
 
   const introspectionFragmentMatcher = new IntrospectionFragmentMatcher({
-    introspectionQueryResultData: {
-      __schema: {
-        types: [
-          {
-            kind: 'INTERFACE',
-            name: 'User',
-            possibleTypes: [{ name: 'SearchType' }],
-          },
-        ],
-      },
-    },
+    introspectionQueryResultData: result,
   });
 
   const cache = new InMemoryCache({

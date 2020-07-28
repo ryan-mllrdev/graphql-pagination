@@ -5,7 +5,6 @@ import { UserRepositoryService } from '../core/services/repository-service/user-
 import { Repository } from '../core/types/Repository';
 import { IonInfiniteScroll, IonContent } from '@ionic/angular';
 import { FormControl } from '@angular/forms';
-import { RepositoryConnection } from 'src/generated/graphql';
 import { RepositoryFetchResult } from '../core/types/RepositoryFetchResult';
 
 @Component({
@@ -14,19 +13,21 @@ import { RepositoryFetchResult } from '../core/types/RepositoryFetchResult';
   styleUrls: ['./repositories.page.scss'],
 })
 export class RepositoriesPage implements OnInit, AfterViewInit {
-  searchInput!: FormControl;
   @ViewChild(IonInfiniteScroll) infiniteScroll!: IonInfiniteScroll;
+  @ViewChild(IonContent) content!: IonContent;
+
+  private valuesUpdated = false;
+  private numberOfResult = 10;
+
+  searchInput!: FormControl;
   repositories!: Observable<Repository[]> | undefined;
-  loginName = '';
+  loginName!: string;
   counter = 0;
   event!: any;
   totalCount = 0;
   currentCount = 0;
   loadingStatus = '';
   searchText = '';
-  private valuesUpdated = false;
-
-  @ViewChild(IonContent) content!: IonContent;
 
   constructor(private route: ActivatedRoute, private userRepositoryService: UserRepositoryService) {}
 
@@ -35,14 +36,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
-    this.searchInput = new FormControl();
-    // tslint:disable-next-line: no-non-null-assertion
-    this.loginName = this.route.snapshot.paramMap.get('login')!;
-    this.initialize(this.loginName);
-
-    this.searchInput.valueChanges.subscribe((value) => {
-      this.searchText = value;
-    });
+    this.initialize();
   }
 
   async loadRepositories(event: any) {
@@ -63,10 +57,26 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   }
 
   // PRIVATE FUNCTIONS
-  private async initialize(loginName: string) {
+  private async initialize() {
+    this.searchInput = new FormControl();
+    this.loginName = this.route.snapshot.paramMap.get('login') ?? '';
+
+    if (!this.loginName) {
+      console.log('Login name is not provided.');
+      return;
+    }
+
+    this.searchInput.valueChanges.subscribe((value) => {
+      this.searchText = value;
+    });
+
     this.valuesUpdated = false;
     // Check if in cache
-    const cachedUserRepositoriesConnection = await this.userRepositoryService.fetchUserRepositories(loginName);
+    const cachedUserRepositoriesConnection = await this.userRepositoryService.fetchUserRepositories(
+      this.loginName,
+      false,
+      this.numberOfResult,
+    );
     // Listen to value changes
     this.initializeQuery();
     // Load values from cache
@@ -88,7 +98,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   }
 
   private async loadMoreUserRepositoriesConnection(loginName: string) {
-    const userRepositoriesConnection = await this.userRepositoryService.fetchUserRepositories(loginName, true);
+    const userRepositoriesConnection = await this.userRepositoryService.fetchUserRepositories(loginName, true, this.numberOfResult);
     if (userRepositoriesConnection) {
       this.updateValues(userRepositoriesConnection);
     }
@@ -104,8 +114,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
 
   private showFetchStatus() {
     const remainingCount: number = this.totalCount - this.currentCount;
-    const fetchCount =
-      remainingCount < this.userRepositoryService.numberOfResultToFetch ? remainingCount : this.userRepositoryService.numberOfResultToFetch;
+    const fetchCount = remainingCount < this.numberOfResult ? remainingCount : this.numberOfResult;
     this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;
   }
 

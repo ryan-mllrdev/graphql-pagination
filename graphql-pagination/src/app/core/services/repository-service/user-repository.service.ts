@@ -17,8 +17,6 @@ export class UserRepositoryService {
   private connectionHasNextPage = false;
   private totalCount = 0;
   private currentCount = 0;
-  private numberOfResult = 0;
-
   private apolloClient!: ApolloClient<any>;
 
   repositoryConnectionQuery!: QueryRef<any>;
@@ -35,8 +33,6 @@ export class UserRepositoryService {
     if (!loginName) {
       return;
     }
-
-    this.numberOfResult = numberOfResult;
 
     const queryVariables = {
       first: numberOfResult,
@@ -114,10 +110,6 @@ export class UserRepositoryService {
 
   get fetchedCount(): number {
     return this.currentCount;
-  }
-
-  get numberOfResultToFetch(): number {
-    return this.numberOfResult;
   }
   // END: GETTERS
 

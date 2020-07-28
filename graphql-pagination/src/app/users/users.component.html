@@ -15,8 +15,8 @@
     </ion-item>
 
     <ion-item lines="none">
-      <ion-select [formControl]="searchHistoryDropdown" [(value)]="selectedSearchHistory" placeholder="None Selected"
-        (ionChange)="selectedSearchHistoryValueChanged()">
+      <ion-select [formControl]="searchHistoryDropdown" [value]="selectedSearchValue" placeholder="None Selected"
+        (ionChange)="searchHistoryValueChanged()">
         <ion-label>Search History</ion-label>
         <ion-select-option *ngFor="let keyword of searchHistory">{{keyword}}</ion-select-option>
       </ion-select>
@@ -24,18 +24,27 @@
     </ion-item>
 
     <ion-item lines="none">
-      <ion-text>
+      <ion-text slot="start">
         Results {{currentCount}} of {{totalCount}}
       </ion-text>
+      <ion-item slot="end" lines="none">
+        <ion-select [formControl]="numberOfResultDropdown" [value]="numberOfResultValue"
+          (ionChange)="numberOfResultValueChanged()">
+          <ion-label>Results to show per page</ion-label>
+          <ion-select-option *ngFor="let numberOfResult of numberOfResultOptions" [value]="numberOfResult">
+            {{numberOfResult}}
+          </ion-select-option>
+        </ion-select>
+        <ion-text>Results / Page</ion-text>
+      </ion-item>
     </ion-item>
 
     <ion-list *ngFor="let user of users | async | ngSearchPipe:searchText" lines="none">
       <app-user [user]="user"></app-user>
     </ion-list>
-
-    <ion-infinite-scroll (ionInfinite)="loadUsers($event)">
-      <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText={{loadingStatus}}>
-      </ion-infinite-scroll-content>
-    </ion-infinite-scroll>
   </ion-col>
 </ion-grid>
+<ion-infinite-scroll (ionInfinite)="loadUsers($event)">
+  <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText={{loadingStatus}}>
+  </ion-infinite-scroll-content>
+</ion-infinite-scroll>

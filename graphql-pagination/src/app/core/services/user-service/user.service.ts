@@ -18,9 +18,7 @@ export class UserService {
   private connectionHasNextPage = false;
   private totalCount = 0;
   private currentCount = 0;
-
   private apolloClient: ApolloClient<UserFetchResult>;
-  private numberOfResult = 0;
 
   usersConnectionQuery!: QueryRef<UserFetchResult>;
 
@@ -33,8 +31,6 @@ export class UserService {
     fetchMore: boolean = false,
     numberOfResult: number = NUMBER_OF_RESULT,
   ): Promise<UserFetchResult | null | undefined> {
-    this.numberOfResult = numberOfResult;
-
     const queryVariables = {
       first: numberOfResult,
       searchKeyword: searchWord,
@@ -43,7 +39,7 @@ export class UserService {
     try {
       if (fetchMore) {
         // Fetching more users
-        return await this.fetchMoreUsers();
+        return await this.fetchMoreUsers(numberOfResult);
       } else {
         // Try to read from cache
         const usersConnectionCache = this.readQuery(queryVariables);
@@ -109,16 +105,13 @@ export class UserService {
   get currentResultCount(): number {
     return this.currentCount;
   }
-
-  get numberOfResultToFetch(): number {
-    return this.numberOfResult;
-  }
   // END: GETTERS
 
   // PRIVATE FUNCTIONS
-  private async fetchMoreUsers(): Promise<UserFetchResult | undefined> {
+  private async fetchMoreUsers(numberOfResult: number): Promise<UserFetchResult | undefined> {
     try {
       const queryVariables = {
+        first: numberOfResult,
         after: this.userConnectionCursor,
       };
       let users: UserFetchResult;
