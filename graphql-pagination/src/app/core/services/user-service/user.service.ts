@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
-import { QueryService } from '../query-service/queries.service';
 import { of, Observable } from 'rxjs';
 import ApolloClient from 'apollo-client';
 import { UserFetchResult } from '../../types/UserFetchResult';
 import { User } from '../../types/User';
 import { SearchResultItemConnection } from 'src/generated/graphql';
+import { GITHUB_USERS_QUERY } from 'src/app/graphql/queries';
 
 const NUMBER_OF_RESULT = 10;
 const FETCH_POLICY = 'cache-first';
@@ -22,7 +22,7 @@ export class UserService {
 
   usersConnectionQuery!: QueryRef<UserFetchResult>;
 
-  constructor(private apollo: Apollo, private queryService: QueryService) {
+  constructor(private apollo: Apollo) {
     this.apolloClient = apollo.getClient();
   }
 
@@ -148,7 +148,7 @@ export class UserService {
   private readQuery(queryVariables: {}): UserFetchResult | null {
     try {
       const usersConnectionCache = this.apolloClient.readQuery<UserFetchResult>({
-        query: this.queryService.usersQuery,
+        query: GITHUB_USERS_QUERY,
         variables: queryVariables,
       });
       return usersConnectionCache;
@@ -159,16 +159,14 @@ export class UserService {
 
   private initializeQuery(queryVariables: {}) {
     this.usersConnectionQuery = this.apollo.watchQuery<UserFetchResult>({
-      query: this.queryService.usersQuery,
+      query: GITHUB_USERS_QUERY,
       variables: queryVariables,
       fetchPolicy: FETCH_POLICY,
     });
   }
 
   private updateQueryVariables(queryVariables: {}) {
-    this.usersConnectionQuery.setOptions({
-      variables: queryVariables,
-    });
+    this.usersConnectionQuery.setVariables(queryVariables);
   }
 
   private reset() {

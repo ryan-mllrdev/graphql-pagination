@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
-import { QueryService } from '../query-service/queries.service';
 import { of, Observable } from 'rxjs';
 import { RepositoryFetchResult } from '../../types/RepositoryFetchResult';
 import { Repository } from '../../types/Repository';
 import ApolloClient from 'apollo-client';
+import { GITHUB_USER_REPOSITORIES_QUERY } from 'src/app/graphql/queries';
 
 const NUMBER_OF_RESULT = 10;
 const FETCH_POLICY = 'cache-first';
@@ -21,7 +21,7 @@ export class UserRepositoryService {
 
   repositoryConnectionQuery!: QueryRef<any>;
 
-  constructor(private apollo: Apollo, private queryService: QueryService) {
+  constructor(private apollo: Apollo) {
     this.apolloClient = apollo.getClient();
   }
 
@@ -151,7 +151,7 @@ export class UserRepositoryService {
   private readQuery(queryVariables: {}): RepositoryFetchResult | null {
     try {
       const repositoryConnectionCache = this.apolloClient.readQuery<RepositoryFetchResult>({
-        query: this.queryService.repositoriesQuery,
+        query: GITHUB_USER_REPOSITORIES_QUERY,
         variables: queryVariables,
       });
       return repositoryConnectionCache;
@@ -161,15 +161,12 @@ export class UserRepositoryService {
   }
 
   private updateQueryVariables(queryVariables: {}) {
-    this.repositoryConnectionQuery.setOptions({
-      query: this.queryService.repositoriesQuery,
-      variables: queryVariables,
-    });
+    this.repositoryConnectionQuery.setVariables(queryVariables);
   }
 
   private initializeQuery(queryVariables: {}) {
     this.repositoryConnectionQuery = this.apollo.watchQuery<RepositoryFetchResult>({
-      query: this.queryService.repositoriesQuery,
+      query: GITHUB_USER_REPOSITORIES_QUERY,
       variables: queryVariables,
       fetchPolicy: FETCH_POLICY,
     });

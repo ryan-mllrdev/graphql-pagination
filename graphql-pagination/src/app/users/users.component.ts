@@ -80,6 +80,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
 
   numberOfResultValueChanged() {
     this.numberOfResultValue = this.numberOfResultDropdown.value;
+    this.applyFilter();
   }
 
   // PRIVATE FUNCTIONS
