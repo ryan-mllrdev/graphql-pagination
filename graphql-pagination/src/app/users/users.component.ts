@@ -14,21 +14,22 @@ import { User } from '../core/types/User';
 export class UsersComponent implements AfterViewInit, OnInit {
   @ViewChild(IonInfiniteScroll) infiniteScroll!: IonInfiniteScroll;
   private valuesUpdated = false;
+  private totalCount = 0;
+  private currentCount = 0;
 
   users!: Observable<User[]> | undefined;
   searchText = '';
-  totalCount = 0;
-  currentCount = 0;
   loadingStatus = '';
-  searchInput!: FormControl;
-  filter!: FormControl;
-  searchHistoryDropdown!: FormControl;
-  numberOfResultDropdown!: FormControl;
   numberOfResultValue = 10;
   searchHistory: string[] = [];
   fetchingData = false;
   selectedSearchValue!: string;
   numberOfResultOptions: number[] = [10, 20, 50, 100];
+
+  searchInput!: FormControl;
+  filter!: FormControl;
+  searchHistoryDropdown!: FormControl;
+  numberOfResultDropdown!: FormControl;
 
   constructor(private userService: UserService) {}
 
@@ -104,6 +105,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   private async loadMoreUsers(keyword: string) {
+    // Fetch more data
     const userConnections = await this.userService.fetchUsers(keyword, true, this.numberOfResultValue);
     if (userConnections) {
       this.updateValues(userConnections);
@@ -113,15 +115,15 @@ export class UsersComponent implements AfterViewInit, OnInit {
   private async initializeSearch(keyword: string) {
     // Check if in cache
     const cachedUserConnections = await this.userService.fetchUsers(keyword, false, this.numberOfResultValue);
-    // Listen to value changes
-    this.initializeQuery();
     // Load values from cache
     if (cachedUserConnections) {
       this.updateValues(cachedUserConnections);
     }
+    // Listen to value changes
+    this.subscribeForIncomingData();
   }
 
-  private initializeQuery() {
+  private subscribeForIncomingData() {
     this.userService.usersConnectionQuery.valueChanges.subscribe((userConnections) => {
       if (!userConnections || userConnections.loading) {
         return;
@@ -138,15 +140,19 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   private updateValues(usersConnection: UserFetchResult) {
+    // Get updated values
     this.valuesUpdated = true;
     this.users = this.userService.populateUsers(usersConnection.search);
     this.totalCount = this.userService.currentTotalCount;
     this.currentCount = this.userService.currentResultCount;
-    this.infiniteScroll.complete();
     this.fetchingData = false;
+
+    // Call complete to make infinite scroll available for the next batch
+    this.infiniteScroll.complete();
   }
 
   private showFetchStatus() {
+    // Show current number of result to fetch over the remaining
     const remainingCount: number = this.totalCount - this.currentCount;
     const fetchCount = remainingCount < this.numberOfResultValue ? remainingCount : this.numberOfResultValue;
     this.loadingStatus = `Loading ${fetchCount} of ${remainingCount}...`;

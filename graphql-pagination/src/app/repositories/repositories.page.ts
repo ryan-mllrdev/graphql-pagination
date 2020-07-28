@@ -18,14 +18,12 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
 
   private valuesUpdated = false;
   private numberOfResult = 10;
+  private totalCount = 0;
+  private currentCount = 0;
 
   searchInput!: FormControl;
   repositories!: Observable<Repository[]> | undefined;
   loginName!: string;
-  counter = 0;
-  event!: any;
-  totalCount = 0;
-  currentCount = 0;
   loadingStatus = '';
   searchText = '';
 
@@ -77,16 +75,21 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
       false,
       this.numberOfResult,
     );
-    // Listen to value changes
-    this.initializeQuery();
+
     // Load values from cache
     if (cachedUserRepositoriesConnection) {
       this.updateValues(cachedUserRepositoriesConnection);
     }
+
+    // Listen to value changes
+    this.subscribeForIncomingData();
+
+    // Enable infinite scroll
     this.disableInfiniteScroll(false);
   }
 
-  private initializeQuery() {
+  private subscribeForIncomingData() {
+    // Subscribe for incoming data
     this.userRepositoryService.repositoryConnectionQuery.valueChanges.subscribe((userRepositoriesConnection) => {
       if (!userRepositoriesConnection || userRepositoriesConnection.loading) {
         return;
@@ -98,20 +101,24 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   }
 
   private async loadMoreUserRepositoriesConnection(loginName: string) {
+    // Fetch more data
     const userRepositoriesConnection = await this.userRepositoryService.fetchUserRepositories(loginName, true, this.numberOfResult);
     if (userRepositoriesConnection) {
       this.updateValues(userRepositoriesConnection);
     }
   }
 
-  private updateValues(userRepositoriesConnection: RepositoryFetchResult) {
+  private updateValues(repositoryFetchResult: RepositoryFetchResult) {
+    // Get the updated values
     this.valuesUpdated = true;
-    this.repositories = this.userRepositoryService.populateRepositories(userRepositoriesConnection);
+    this.repositories = this.userRepositoryService.populateRepositories(repositoryFetchResult);
     this.totalCount = this.userRepositoryService.repositoriesCount;
     this.currentCount = this.userRepositoryService.fetchedCount;
+    // Call complete to make the infinite scroll available for the next request
     this.infiniteScroll.complete();
   }
 
+  // Show the number of result to fetch over the remaining number of results
   private showFetchStatus() {
     const remainingCount: number = this.totalCount - this.currentCount;
     const fetchCount = remainingCount < this.numberOfResult ? remainingCount : this.numberOfResult;

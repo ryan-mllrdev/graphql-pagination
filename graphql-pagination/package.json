@@ -35,6 +35,7 @@
     "apollo-client": "^2.6.10",
     "apollo-link": "^1.2.14",
     "apollo-link-context": "^1.0.20",
+    "apollo-link-error": "^1.1.13",
     "cordova-plugin-inappbrowser": "^4.0.0",
     "graphql": "^15.3.0",
     "graphql-tag": "^2.10.4",
