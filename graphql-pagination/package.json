@@ -52,6 +52,15 @@
     "@angular/language-service": "~9.1.6",
     "@capacitor/cli": "2.2.1",
     "@graphql-codegen/cli": "1.17.6",
+    "@graphql-codegen/fragment-matcher": "1.17.6",
+    "@graphql-codegen/introspection": "1.17.6",
+    "@graphql-codegen/typescript": "1.17.6",
+    "@graphql-codegen/typescript-apollo-angular": "1.17.6",
+    "@graphql-codegen/typescript-document-nodes": "1.17.6",
+    "@graphql-codegen/typescript-graphql-files-modules": "1.17.6",
+    "@graphql-codegen/typescript-graphql-request": "^1.17.6",
+    "@graphql-codegen/typescript-operations": "1.17.6",
+    "@graphql-codegen/typescript-resolvers": "^1.17.6",
     "@ionic/angular-toolkit": "^2.1.1",
     "@types/jasmine": "~3.5.0",
     "@types/jasminewd2": "~2.0.3",
@@ -71,14 +80,7 @@
     "tslint-config-airbnb": "^5.11.2",
     "tslint-config-prettier": "^1.18.0",
     "typescript": "~3.8.3",
-    "yargs": "^15.4.1",
-    "@graphql-codegen/typescript": "1.17.6",
-    "@graphql-codegen/typescript-operations": "1.17.6",
-    "@graphql-codegen/typescript-apollo-angular": "1.17.6",
-    "@graphql-codegen/typescript-graphql-files-modules": "1.17.6",
-    "@graphql-codegen/typescript-document-nodes": "1.17.6",
-    "@graphql-codegen/fragment-matcher": "1.17.6",
-    "@graphql-codegen/introspection": "1.17.6"
+    "yargs": "^15.4.1"
   },
   "description": "An Ionic project"
 }

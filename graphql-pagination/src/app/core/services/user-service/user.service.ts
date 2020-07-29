@@ -2,10 +2,10 @@ import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
 import { of, Observable } from 'rxjs';
 import ApolloClient from 'apollo-client';
-import { UserFetchResult } from '../../types/UserFetchResult';
 import { User } from '../../types/User';
-import { SearchResultItemConnection } from 'src/generated/graphql';
-import { GITHUB_USERS_QUERY } from 'src/app/graphql/queries';
+import { SearchResultItemConnection, Query } from 'src/generated/graphql';
+import { GITHUB_USERS_QUERY } from '../../../graphql-queries';
+import { UserFetchResult } from '../../types/UserFetchResult';
 
 const NUMBER_OF_RESULT = 10;
 const FETCH_POLICY = 'cache-first';
@@ -14,13 +14,13 @@ const FETCH_POLICY = 'cache-first';
   providedIn: 'root',
 })
 export class UserService {
-  private userConnectionCursor = '';
-  private connectionHasNextPage = false;
+  private resultCursor = '';
+  private resultHasNextPage = false;
   private totalCount = 0;
   private currentCount = 0;
   private apolloClient: ApolloClient<UserFetchResult>;
 
-  usersConnectionQuery!: QueryRef<UserFetchResult>;
+  usersQuery!: QueryRef<UserFetchResult>;
 
   constructor(private apollo: Apollo) {
     this.apolloClient = apollo.getClient();
@@ -74,8 +74,8 @@ export class UserService {
     // pageInfo.endCursor
     // pageInfo.hasNextPage
     // search.userCount
-    this.userConnectionCursor = currentPageInfo.endCursor ?? '';
-    this.connectionHasNextPage = currentPageInfo.hasNextPage;
+    this.resultCursor = currentPageInfo.endCursor ?? '';
+    this.resultHasNextPage = currentPageInfo.hasNextPage;
     this.totalCount = usersConnection.userCount;
 
     this.currentCount = usersConnectionNodes?.length ?? 0;
@@ -95,7 +95,7 @@ export class UserService {
 
   // GETTERS
   get hasNextPage(): boolean | null | undefined {
-    return this.connectionHasNextPage;
+    return this.resultHasNextPage;
   }
 
   get currentTotalCount(): number {
@@ -108,41 +108,38 @@ export class UserService {
   // END: GETTERS
 
   // PRIVATE FUNCTIONS
-  private async fetchMoreUsers(numberOfResult: number): Promise<UserFetchResult | undefined> {
+  private async fetchMoreUsers(numberOfResult: number): Promise<UserFetchResult> {
+    let queryResult!: UserFetchResult;
     try {
       const queryVariables = {
         first: numberOfResult,
-        after: this.userConnectionCursor,
+        after: this.resultCursor,
       };
-      let users: UserFetchResult;
-      await this.usersConnectionQuery
+      await this.usersQuery
         .fetchMore({
           variables: queryVariables,
           updateQuery: (previousResult, { fetchMoreResult }) => {
-            // search.nodes
-            const previousUserNodes = previousResult.search?.nodes;
-            const currentUserNodes = fetchMoreResult?.search?.nodes;
+            if (!fetchMoreResult) {
+              return previousResult;
+            }
+
+            const currentUserNodes = fetchMoreResult.search.nodes;
+            const previousUserNodes = previousResult.search.nodes;
 
             // Merged previous and current results
             const mergedUserNodes = [...(previousUserNodes ?? []), ...(currentUserNodes ?? [])];
-            const newSearchResult: UserFetchResult = {
-              ...fetchMoreResult,
-            };
+            fetchMoreResult.search.nodes = mergedUserNodes;
 
-            if (newSearchResult.search?.nodes) {
-              newSearchResult.search.nodes = mergedUserNodes;
-            }
-
-            return (users = newSearchResult);
+            return (queryResult = fetchMoreResult);
           },
         })
         .finally(() => {
-          return users;
+          return queryResult;
         });
     } catch (error) {
       console.log(error);
     }
-    return undefined;
+    return queryResult;
   }
 
   private readQuery(queryVariables: {}): UserFetchResult | null {
@@ -158,7 +155,7 @@ export class UserService {
   }
 
   private initializeQuery(queryVariables: {}) {
-    this.usersConnectionQuery = this.apollo.watchQuery<UserFetchResult>({
+    this.usersQuery = this.apollo.watchQuery<UserFetchResult>({
       query: GITHUB_USERS_QUERY,
       variables: queryVariables,
       fetchPolicy: FETCH_POLICY,
@@ -166,12 +163,12 @@ export class UserService {
   }
 
   private updateQueryVariables(queryVariables: {}) {
-    this.usersConnectionQuery.setVariables(queryVariables);
+    this.usersQuery.setVariables(queryVariables);
   }
 
   private reset() {
-    this.userConnectionCursor = '';
-    this.connectionHasNextPage = true;
+    this.resultCursor = '';
+    this.resultHasNextPage = true;
     this.totalCount = 0;
     this.currentCount = 0;
   }

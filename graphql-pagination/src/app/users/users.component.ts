@@ -3,8 +3,9 @@ import { UserService } from '../core/services/user-service/user.service';
 import { Observable } from 'rxjs';
 import { FormControl, Validators } from '@angular/forms';
 import { IonInfiniteScroll } from '@ionic/angular';
-import { UserFetchResult } from '../core/types/UserFetchResult';
 import { User } from '../core/types/User';
+import { Query } from 'src/generated/graphql';
+import { UserFetchResult } from '../core/types/UserFetchResult';
 
 @Component({
   selector: 'app-users',
@@ -14,8 +15,6 @@ import { User } from '../core/types/User';
 export class UsersComponent implements AfterViewInit, OnInit {
   @ViewChild(IonInfiniteScroll) infiniteScroll!: IonInfiniteScroll;
   private valuesUpdated = false;
-  private totalCount = 0;
-  private currentCount = 0;
 
   users!: Observable<User[]> | undefined;
   searchText = '';
@@ -25,6 +24,8 @@ export class UsersComponent implements AfterViewInit, OnInit {
   fetchingData = false;
   selectedSearchValue!: string;
   numberOfResultOptions: number[] = [10, 20, 50, 100];
+  totalCount = 0;
+  currentCount = 0;
 
   searchInput!: FormControl;
   filter!: FormControl;
@@ -124,7 +125,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   private subscribeForIncomingData() {
-    this.userService.usersConnectionQuery.valueChanges.subscribe((userConnections) => {
+    this.userService.usersQuery.valueChanges.subscribe((userConnections) => {
       if (!userConnections || userConnections.loading) {
         return;
       }

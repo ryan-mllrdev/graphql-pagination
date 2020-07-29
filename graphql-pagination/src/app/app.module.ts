@@ -8,12 +8,9 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
-import { GraphQLModule } from './graphql/graphql.module';
-
+import { GraphQLModule } from './graphql.module';
 import { ReactiveFormsModule } from '@angular/forms';
-
 import { NgSearchPipe } from 'ng-search-pipe';
-
 import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
 
 @NgModule({

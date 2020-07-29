@@ -29,7 +29,7 @@
       </ion-text>
       <ion-item slot="end" lines="none">
         <ion-select [formControl]="numberOfResultDropdown" [value]="numberOfResultValue"
-          (ionChange)="numberOfResultValueChanged()" [disabled]="fetchingData || !filter.valid">
+          (ionChange)="numberOfResultValueChanged()">
           <ion-label>Results to show per page</ion-label>
           <ion-select-option *ngFor="let numberOfResult of numberOfResultOptions" [value]="numberOfResult">
             {{numberOfResult}}

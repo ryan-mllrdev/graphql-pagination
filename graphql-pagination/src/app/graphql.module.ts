@@ -1,40 +1,23 @@
 import { NgModule } from '@angular/core';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HttpHeaders } from '@angular/common/http';
 
 import { ApolloModule, APOLLO_OPTIONS, Apollo } from 'apollo-angular';
 import { HttpLink, HttpLinkModule } from 'apollo-angular-link-http';
 import { InMemoryCache, IntrospectionFragmentMatcher } from 'apollo-cache-inmemory';
-import { setContext } from 'apollo-link-context';
 import { ApolloLink } from 'apollo-link';
-import { environment } from '../../environments/environment';
-import result from '../../generated/graphql';
-
-const uri = 'https://api.github.com/graphql';
+import { environment } from '../environments/environment';
+import introspectionSchema from '../generated/fragment-matcher';
 
 export function provideApollo(httpLink: HttpLink) {
-  const basic = setContext((operation, context) => ({
-    headers: {
-      Accept: 'charset=utf-8',
-    },
-  }));
+  const http = httpLink.create({
+    uri: 'https://api.github.com/graphql',
+    headers: new HttpHeaders().set('Authorization', `Bearer ${environment.GITHUB_API_TOKEN}`),
+  });
 
-  const token = environment.GITHUB_API_TOKEN;
-  const auth = setContext((operation, context) => ({
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  }));
-
-  const link = ApolloLink.from([
-    basic,
-    auth,
-    httpLink.create({
-      uri,
-    }),
-  ]);
+  const apolloLink = ApolloLink.from([http]);
 
   const introspectionFragmentMatcher = new IntrospectionFragmentMatcher({
-    introspectionQueryResultData: result,
+    introspectionQueryResultData: introspectionSchema,
   });
 
   const cache = new InMemoryCache({
@@ -42,8 +25,9 @@ export function provideApollo(httpLink: HttpLink) {
   });
 
   return {
-    link,
+    link: apolloLink,
     cache,
+    connectToDevTools: true,
   };
 }
 

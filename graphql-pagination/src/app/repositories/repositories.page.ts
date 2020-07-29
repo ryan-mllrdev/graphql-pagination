@@ -5,6 +5,7 @@ import { UserRepositoryService } from '../core/services/repository-service/user-
 import { Repository } from '../core/types/Repository';
 import { IonInfiniteScroll, IonContent } from '@ionic/angular';
 import { FormControl } from '@angular/forms';
+import { User, RepositoryConnection } from 'src/generated/graphql';
 import { RepositoryFetchResult } from '../core/types/RepositoryFetchResult';
 
 @Component({
@@ -18,14 +19,14 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
 
   private valuesUpdated = false;
   private numberOfResult = 10;
-  private totalCount = 0;
-  private currentCount = 0;
 
   searchInput!: FormControl;
   repositories!: Observable<Repository[]> | undefined;
   loginName!: string;
   loadingStatus = '';
   searchText = '';
+  totalCount = 0;
+  currentCount = 0;
 
   constructor(private route: ActivatedRoute, private userRepositoryService: UserRepositoryService) {}
 
@@ -90,12 +91,12 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
 
   private subscribeForIncomingData() {
     // Subscribe for incoming data
-    this.userRepositoryService.repositoryConnectionQuery.valueChanges.subscribe((userRepositoriesConnection) => {
-      if (!userRepositoriesConnection || userRepositoriesConnection.loading) {
+    this.userRepositoryService.userRepositoriesQuery.valueChanges.subscribe(({ data, loading }) => {
+      if (!data || loading) {
         return;
       }
       if (!this.valuesUpdated) {
-        this.updateValues(userRepositoriesConnection.data);
+        this.updateValues(data);
       }
     });
   }
@@ -111,7 +112,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   private updateValues(repositoryFetchResult: RepositoryFetchResult) {
     // Get the updated values
     this.valuesUpdated = true;
-    this.repositories = this.userRepositoryService.populateRepositories(repositoryFetchResult);
+    this.repositories = this.userRepositoryService.populateRepositories(repositoryFetchResult.user.repositories);
     this.totalCount = this.userRepositoryService.repositoriesCount;
     this.currentCount = this.userRepositoryService.fetchedCount;
     // Call complete to make the infinite scroll available for the next request
