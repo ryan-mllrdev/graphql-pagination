@@ -10,7 +10,8 @@
         <ion-input placeholder="Enter search keyword" clearInput [formControl]="searchUserInput"></ion-input>
       </ion-item>
       <ion-item lines="none" slot="end">
-        <ion-button (click)="search()" shape="round" [disabled]="fetchingData || !searchUserInput.valid">Search
+        <ion-button (click)="search()" shape="round" [disabled]="fetchingData || !searchUserInput.valid">
+          {{searchBtnText}}
         </ion-button>
       </ion-item>
     </ion-item>
