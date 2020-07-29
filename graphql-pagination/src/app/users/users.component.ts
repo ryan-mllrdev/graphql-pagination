@@ -26,8 +26,8 @@ export class UsersComponent implements AfterViewInit, OnInit {
   totalCount = 0;
   currentCount = 0;
 
-  searchInput!: FormControl;
-  filter!: FormControl;
+  filterResultsInput!: FormControl;
+  searchUserInput!: FormControl;
   searchHistoryDropdown!: FormControl;
   numberOfResultDropdown!: FormControl;
 
@@ -49,15 +49,15 @@ export class UsersComponent implements AfterViewInit, OnInit {
 
     // Load more if has next pages
     if (this.userService.hasNextPage) {
-      await this.loadMoreUsers(this.filter.value);
+      await this.loadMoreUsers(this.searchUserInput.value);
     } else {
       this.disableInfiniteScroll(true);
       this.fetchingData = false;
     }
   }
 
-  async applyFilter() {
-    const keyword = this.filter.value;
+  async search() {
+    const keyword = this.searchUserInput.value;
     if (!keyword) {
       return;
     }
@@ -75,13 +75,13 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   searchHistoryValueChanged() {
-    this.filter.setValue(this.searchHistoryDropdown.value);
-    this.applyFilter();
+    this.searchUserInput.setValue(this.searchHistoryDropdown.value);
+    this.search();
   }
 
   numberOfResultValueChanged() {
     this.numberOfResultValue = this.numberOfResultDropdown.value;
-    this.applyFilter();
+    this.search();
   }
 
   // PRIVATE FUNCTIONS
@@ -91,15 +91,15 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   private initializeFormControls() {
-    this.searchInput = new FormControl();
-    this.filter = new FormControl('', { validators: Validators.required });
+    this.filterResultsInput = new FormControl();
+    this.searchUserInput = new FormControl('', { validators: Validators.required });
     this.searchHistoryDropdown = new FormControl();
     this.numberOfResultDropdown = new FormControl(this.numberOfResultValue);
     this.numberOfResultDropdown.setValue(this.numberOfResultValue);
   }
 
   private listenForFilterInputValueChanged() {
-    this.searchInput.valueChanges.subscribe((value) => {
+    this.filterResultsInput.valueChanges.subscribe((value) => {
       this.searchText = value;
     });
   }
