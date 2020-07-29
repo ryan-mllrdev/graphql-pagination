@@ -1,16 +1,17 @@
 <ion-grid>
   <ion-col size="12">
     <ion-item *ngIf="users">
-      <ion-input placeholder="Filter current results" [formControl]="searchInput" clearInput></ion-input>
+      <ion-input placeholder="Filter current results" [formControl]="filterResultsInput" clearInput></ion-input>
     </ion-item>
 
     <ion-item lines="none">
 
       <ion-item class="ion-no-padding">
-        <ion-input placeholder="Enter search keyword" clearInput [formControl]="filter"></ion-input>
+        <ion-input placeholder="Enter search keyword" clearInput [formControl]="searchUserInput"></ion-input>
       </ion-item>
       <ion-item lines="none" slot="end">
-        <ion-button (click)="applyFilter()" shape="round" [disabled]="fetchingData || !filter.valid">Apply</ion-button>
+        <ion-button (click)="search()" shape="round" [disabled]="fetchingData || !searchUserInput.valid">Search
+        </ion-button>
       </ion-item>
     </ion-item>
 
