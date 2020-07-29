@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { FormControl, Validators } from '@angular/forms';
 import { IonInfiniteScroll } from '@ionic/angular';
 import { User } from '../core/types/User';
-import { Query } from 'src/generated/graphql';
 import { UserFetchResult } from '../core/types/UserFetchResult';
 
 @Component({
