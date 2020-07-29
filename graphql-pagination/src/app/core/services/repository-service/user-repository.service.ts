@@ -4,7 +4,7 @@ import { of, Observable } from 'rxjs';
 import { Repository } from '../../types/Repository';
 import ApolloClient from 'apollo-client';
 import { GITHUB_USER_REPOSITORIES_QUERY } from '../../../graphql-queries';
-import { User, RepositoryConnection } from 'src/generated/graphql';
+import { RepositoryConnection } from 'src/generated/graphql';
 import { RepositoryFetchResult } from '../../types/RepositoryFetchResult';
 
 const NUMBER_OF_RESULT = 10;

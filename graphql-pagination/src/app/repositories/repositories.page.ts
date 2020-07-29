@@ -5,7 +5,6 @@ import { UserRepositoryService } from '../core/services/repository-service/user-
 import { Repository } from '../core/types/Repository';
 import { IonInfiniteScroll, IonContent } from '@ionic/angular';
 import { FormControl } from '@angular/forms';
-import { User, RepositoryConnection } from 'src/generated/graphql';
 import { RepositoryFetchResult } from '../core/types/RepositoryFetchResult';
 
 @Component({

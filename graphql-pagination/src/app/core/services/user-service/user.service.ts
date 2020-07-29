@@ -3,7 +3,7 @@ import { Apollo, QueryRef } from 'apollo-angular';
 import { of, Observable } from 'rxjs';
 import ApolloClient from 'apollo-client';
 import { User } from '../../types/User';
-import { SearchResultItemConnection, Query } from 'src/generated/graphql';
+import { SearchResultItemConnection } from 'src/generated/graphql';
 import { GITHUB_USERS_QUERY } from '../../../graphql-queries';
 import { UserFetchResult } from '../../types/UserFetchResult';
 
