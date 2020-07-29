@@ -25,6 +25,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   numberOfResultOptions: number[] = [10, 20, 50, 100];
   totalCount = 0;
   currentCount = 0;
+  searchBtnText = 'Search';
 
   filterResultsInput!: FormControl;
   searchUserInput!: FormControl;
@@ -42,8 +43,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   async loadUsers(event: any) {
-    this.fetchingData = true;
-    this.valuesUpdated = false;
+    this.toggleFetchingData(true);
     // Show loading status
     this.showFetchStatus();
 
@@ -52,7 +52,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
       await this.loadMoreUsers(this.searchUserInput.value);
     } else {
       this.disableInfiniteScroll(true);
-      this.fetchingData = false;
+      this.toggleFetchingData(false);
     }
   }
 
@@ -61,8 +61,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
     if (!keyword) {
       return;
     }
-    this.fetchingData = true;
-    this.valuesUpdated = false;
+    this.toggleFetchingData(true);
     await this.initializeSearch(keyword);
     this.disableInfiniteScroll(false);
     // Look for keywords from history list
@@ -88,6 +87,12 @@ export class UsersComponent implements AfterViewInit, OnInit {
   private initialize() {
     this.initializeFormControls();
     this.listenForFilterInputValueChanged();
+  }
+
+  private toggleFetchingData(fetching: boolean) {
+    this.fetchingData = fetching;
+    this.valuesUpdated = !fetching;
+    this.searchBtnText = fetching ? 'Loading...' : 'Search';
   }
 
   private initializeFormControls() {
@@ -141,11 +146,11 @@ export class UsersComponent implements AfterViewInit, OnInit {
 
   private updateValues(usersConnection: UserFetchResult) {
     // Get updated values
-    this.valuesUpdated = true;
     this.users = this.userService.populateUsers(usersConnection.search);
     this.totalCount = this.userService.currentTotalCount;
     this.currentCount = this.userService.currentResultCount;
-    this.fetchingData = false;
+
+    this.toggleFetchingData(false);
 
     // Call complete to make infinite scroll available for the next batch
     this.infiniteScroll.complete();
