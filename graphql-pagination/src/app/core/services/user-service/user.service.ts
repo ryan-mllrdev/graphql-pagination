@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
-import { QueryService } from '../query-service/queries.service';
 import { of, Observable } from 'rxjs';
 import ApolloClient from 'apollo-client';
-import { UserFetchResult } from '../../types/UserFetchResult';
 import { User } from '../../types/User';
-import { SearchResultItemConnection } from 'src/generated/graphql';
+import { SearchResultItemConnection, Query } from 'src/generated/graphql';
+import { GITHUB_USERS_QUERY } from '../../../graphql-queries';
+import { UserFetchResult } from '../../types/UserFetchResult';
 
 const NUMBER_OF_RESULT = 10;
 const FETCH_POLICY = 'cache-first';
@@ -14,17 +14,15 @@ const FETCH_POLICY = 'cache-first';
   providedIn: 'root',
 })
 export class UserService {
-  private userConnectionCursor = '';
-  private connectionHasNextPage = false;
+  private resultCursor = '';
+  private resultHasNextPage = false;
   private totalCount = 0;
   private currentCount = 0;
-
   private apolloClient: ApolloClient<UserFetchResult>;
-  private numberOfResult = 0;
 
-  usersConnectionQuery!: QueryRef<UserFetchResult>;
+  usersQuery!: QueryRef<UserFetchResult>;
 
-  constructor(private apollo: Apollo, private queryService: QueryService) {
+  constructor(private apollo: Apollo) {
     this.apolloClient = apollo.getClient();
   }
 
@@ -33,8 +31,6 @@ export class UserService {
     fetchMore: boolean = false,
     numberOfResult: number = NUMBER_OF_RESULT,
   ): Promise<UserFetchResult | null | undefined> {
-    this.numberOfResult = numberOfResult;
-
     const queryVariables = {
       first: numberOfResult,
       searchKeyword: searchWord,
@@ -43,7 +39,7 @@ export class UserService {
     try {
       if (fetchMore) {
         // Fetching more users
-        return await this.fetchMoreUsers();
+        return await this.fetchMoreUsers(numberOfResult);
       } else {
         // Try to read from cache
         const usersConnectionCache = this.readQuery(queryVariables);
@@ -78,8 +74,8 @@ export class UserService {
     // pageInfo.endCursor
     // pageInfo.hasNextPage
     // search.userCount
-    this.userConnectionCursor = currentPageInfo.endCursor ?? '';
-    this.connectionHasNextPage = currentPageInfo.hasNextPage;
+    this.resultCursor = currentPageInfo.endCursor ?? '';
+    this.resultHasNextPage = currentPageInfo.hasNextPage;
     this.totalCount = usersConnection.userCount;
 
     this.currentCount = usersConnectionNodes?.length ?? 0;
@@ -99,7 +95,7 @@ export class UserService {
 
   // GETTERS
   get hasNextPage(): boolean | null | undefined {
-    return this.connectionHasNextPage;
+    return this.resultHasNextPage;
   }
 
   get currentTotalCount(): number {
@@ -109,53 +105,47 @@ export class UserService {
   get currentResultCount(): number {
     return this.currentCount;
   }
-
-  get numberOfResultToFetch(): number {
-    return this.numberOfResult;
-  }
   // END: GETTERS
 
   // PRIVATE FUNCTIONS
-  private async fetchMoreUsers(): Promise<UserFetchResult | undefined> {
+  private async fetchMoreUsers(numberOfResult: number): Promise<UserFetchResult> {
+    let queryResult!: UserFetchResult;
     try {
       const queryVariables = {
-        after: this.userConnectionCursor,
+        first: numberOfResult,
+        after: this.resultCursor,
       };
-      let users: UserFetchResult;
-      await this.usersConnectionQuery
+      await this.usersQuery
         .fetchMore({
           variables: queryVariables,
           updateQuery: (previousResult, { fetchMoreResult }) => {
-            // search.nodes
-            const previousUserNodes = previousResult.search?.nodes;
-            const currentUserNodes = fetchMoreResult?.search?.nodes;
+            if (!fetchMoreResult) {
+              return previousResult;
+            }
+
+            const currentUserNodes = fetchMoreResult.search.nodes;
+            const previousUserNodes = previousResult.search.nodes;
 
             // Merged previous and current results
             const mergedUserNodes = [...(previousUserNodes ?? []), ...(currentUserNodes ?? [])];
-            const newSearchResult: UserFetchResult = {
-              ...fetchMoreResult,
-            };
+            fetchMoreResult.search.nodes = mergedUserNodes;
 
-            if (newSearchResult.search?.nodes) {
-              newSearchResult.search.nodes = mergedUserNodes;
-            }
-
-            return (users = newSearchResult);
+            return (queryResult = fetchMoreResult);
           },
         })
         .finally(() => {
-          return users;
+          return queryResult;
         });
     } catch (error) {
       console.log(error);
     }
-    return undefined;
+    return queryResult;
   }
 
   private readQuery(queryVariables: {}): UserFetchResult | null {
     try {
       const usersConnectionCache = this.apolloClient.readQuery<UserFetchResult>({
-        query: this.queryService.usersQuery,
+        query: GITHUB_USERS_QUERY,
         variables: queryVariables,
       });
       return usersConnectionCache;
@@ -165,22 +155,20 @@ export class UserService {
   }
 
   private initializeQuery(queryVariables: {}) {
-    this.usersConnectionQuery = this.apollo.watchQuery<UserFetchResult>({
-      query: this.queryService.usersQuery,
+    this.usersQuery = this.apollo.watchQuery<UserFetchResult>({
+      query: GITHUB_USERS_QUERY,
       variables: queryVariables,
       fetchPolicy: FETCH_POLICY,
     });
   }
 
   private updateQueryVariables(queryVariables: {}) {
-    this.usersConnectionQuery.setOptions({
-      variables: queryVariables,
-    });
+    this.usersQuery.setVariables(queryVariables);
   }
 
   private reset() {
-    this.userConnectionCursor = '';
-    this.connectionHasNextPage = true;
+    this.resultCursor = '';
+    this.resultHasNextPage = true;
     this.totalCount = 0;
     this.currentCount = 0;
   }

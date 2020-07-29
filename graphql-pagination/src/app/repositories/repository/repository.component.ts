@@ -1,5 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { Repository } from '../../core/types/Repository';
+import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
 
 @Component({
   selector: 'app-repository',
@@ -9,7 +10,7 @@ import { Repository } from '../../core/types/Repository';
 export class RepositoryComponent implements OnInit {
   @Input() repository!: Repository;
 
-  constructor() {}
+  constructor(private inAppBrowser: InAppBrowser) {}
 
   ngOnInit() {}
 
@@ -17,6 +18,7 @@ export class RepositoryComponent implements OnInit {
     if (!this.repository || !this.repository?.url) {
       return;
     }
-    window.open(this.repository.url, '_blank');
+    const browser = this.inAppBrowser.create(this.repository.url, '_blank');
+    browser.close();
   }
 }
