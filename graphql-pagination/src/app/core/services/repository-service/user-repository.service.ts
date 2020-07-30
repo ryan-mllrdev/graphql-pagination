@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
 import { of, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Repository } from '../../types/Repository';
 import ApolloClient from 'apollo-client';
 import { GITHUB_USER_REPOSITORIES_QUERY } from '../../../graphql-queries';
 import { RepositoryConnection } from 'src/generated/graphql';
 import { RepositoryFetchResult } from '../../types/RepositoryFetchResult';
+import { RepositoryQueryVariables } from '../../types/RepositoryQueryVariables';
 
-const NUMBER_OF_RESULT = 10;
 const FETCH_POLICY = 'cache-first';
 
 @Injectable({
@@ -26,43 +27,76 @@ export class UserRepositoryService {
     this.apolloClient = apollo.getClient();
   }
 
-  async fetchUserRepositories(
-    loginName: string,
-    fetchMore: boolean = false,
-    numberOfResult: number = NUMBER_OF_RESULT,
-  ): Promise<RepositoryFetchResult | null | undefined> {
-    if (!loginName) {
-      return;
-    }
+  fetchRepositories(queryVariables: RepositoryQueryVariables): Observable<RepositoryFetchResult> {
+    this.userRepositoriesQuery = this.apollo.watchQuery<RepositoryFetchResult>({
+      query: GITHUB_USER_REPOSITORIES_QUERY,
+      variables: queryVariables,
+      fetchPolicy: FETCH_POLICY,
+    });
 
-    const queryVariables = {
-      first: numberOfResult,
-      login: loginName,
-    };
+    const result = this.userRepositoriesQuery.valueChanges.pipe(
+      map((fetchResult: any) => {
+        const repositoryFetchResult: RepositoryFetchResult = {
+          user: fetchResult.data.user,
+        };
+        return repositoryFetchResult;
+      }),
+    );
 
+    return result;
+  }
+
+  fetchMoreRepositories(numberOfResult: number): Observable<RepositoryFetchResult> {
+    let repositoryFetchResult!: RepositoryFetchResult;
     try {
-      if (fetchMore) {
-        // Fetching more repositories
-        return await this.fetchMoreUserRepositories();
-      } else {
-        // Try to read from cache
-        const repositoryConnectionCache = this.readQuery(queryVariables);
+      const queryVariables = {
+        first: numberOfResult,
+        after: this.resultCursor,
+      };
+      this.userRepositoriesQuery
+        .fetchMore({
+          variables: queryVariables,
+          updateQuery: (previousResult, { fetchMoreResult }) => {
+            if (!fetchMoreResult) {
+              return (repositoryFetchResult = previousResult);
+            }
 
-        if (repositoryConnectionCache) {
-          // Update query variables
-          this.updateQueryVariables(queryVariables);
-          return repositoryConnectionCache;
-        } else {
-          // Initial request
-          this.reset();
-          this.initializeQuery(queryVariables);
-        }
+            const previousRepositoryNodes = previousResult.user.repositories.nodes;
+            const currentRepositoryNodes = fetchMoreResult.user.repositories.nodes;
+
+            // Merged previous and current results
+            const mergedUserNodes = [...(previousRepositoryNodes ?? []), ...(currentRepositoryNodes ?? [])];
+            fetchMoreResult.user.repositories.nodes = mergedUserNodes;
+
+            return (repositoryFetchResult = fetchMoreResult);
+          },
+        })
+        .finally(() => {
+          return repositoryFetchResult;
+        });
+    } catch (error) {
+      console.log(error);
+    }
+    return of(repositoryFetchResult);
+  }
+
+  readRepositoriesFromCache(queryVariables: RepositoryQueryVariables): RepositoryFetchResult | null {
+    let repositoryCache!: RepositoryFetchResult | null;
+    try {
+      // Try to read from cache
+      const cache = this.readQuery(queryVariables);
+
+      if (cache) {
+        repositoryCache = cache;
+        // Update query variables
+        this.updateQueryVariables(queryVariables);
+        return repositoryCache;
       }
     } catch (error) {
       console.log(error);
     }
 
-    return undefined;
+    return repositoryCache;
   }
 
   populateRepositories(repositoryConnection: RepositoryConnection): Observable<Repository[]> | undefined {
@@ -114,41 +148,7 @@ export class UserRepositoryService {
   }
   // END: GETTERS
 
-  // PRIVATE FUNCTIONS
-  private async fetchMoreUserRepositories(): Promise<RepositoryFetchResult> {
-    let repositories!: RepositoryFetchResult;
-    try {
-      const queryVariables = {
-        after: this.resultCursor,
-      };
-      await this.userRepositoriesQuery
-        .fetchMore({
-          variables: queryVariables,
-          updateQuery: (previousResult, { fetchMoreResult }) => {
-            if (!fetchMoreResult) {
-              return (repositories = previousResult);
-            }
-
-            const previousRepositoryNodes = previousResult.user.repositories.nodes;
-            const currentRepositoryNodes = fetchMoreResult.user.repositories.nodes;
-
-            // Merged previous and current results
-            const mergedUserNodes = [...(previousRepositoryNodes ?? []), ...(currentRepositoryNodes ?? [])];
-            fetchMoreResult.user.repositories.nodes = mergedUserNodes;
-
-            return (repositories = fetchMoreResult);
-          },
-        })
-        .finally(() => {
-          return repositories;
-        });
-    } catch (error) {
-      console.log(error);
-    }
-    return repositories;
-  }
-
-  private readQuery(queryVariables: {}): RepositoryFetchResult | null {
+  private readQuery(queryVariables: RepositoryQueryVariables): RepositoryFetchResult | null {
     try {
       const repositoryConnectionCache = this.apolloClient.readQuery<RepositoryFetchResult>({
         query: GITHUB_USER_REPOSITORIES_QUERY,
@@ -160,23 +160,8 @@ export class UserRepositoryService {
     }
   }
 
-  private updateQueryVariables(queryVariables: {}) {
+  private updateQueryVariables(queryVariables: RepositoryQueryVariables) {
     this.userRepositoriesQuery.setVariables(queryVariables);
-  }
-
-  private initializeQuery(queryVariables: {}) {
-    this.userRepositoriesQuery = this.apollo.watchQuery<RepositoryFetchResult>({
-      query: GITHUB_USER_REPOSITORIES_QUERY,
-      variables: queryVariables,
-      fetchPolicy: FETCH_POLICY,
-    });
-  }
-
-  private reset() {
-    this.resultCursor = '';
-    this.resultHasNextPage = true;
-    this.totalCount = 0;
-    this.currentCount = 0;
   }
   // END: PRIVATE FUNCTIONS
 }

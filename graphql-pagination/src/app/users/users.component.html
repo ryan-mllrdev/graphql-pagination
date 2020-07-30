@@ -46,7 +46,7 @@
     </ion-list>
   </ion-col>
 </ion-grid>
-<ion-infinite-scroll (ionInfinite)="loadUsers($event)">
+<ion-infinite-scroll (ionInfinite)="fetchMore($event)">
   <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText={{loadingStatus}}>
   </ion-infinite-scroll-content>
 </ion-infinite-scroll>

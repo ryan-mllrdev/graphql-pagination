@@ -1,13 +1,14 @@
 import { Injectable } from '@angular/core';
 import { Apollo, QueryRef } from 'apollo-angular';
 import { of, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import ApolloClient from 'apollo-client';
 import { User } from '../../types/User';
 import { SearchResultItemConnection } from 'src/generated/graphql';
 import { GITHUB_USERS_QUERY } from '../../../graphql-queries';
 import { UserFetchResult } from '../../types/UserFetchResult';
+import { UserQueryVariables } from '../../types/UserQueryVariables';
 
-const NUMBER_OF_RESULT = 10;
 const FETCH_POLICY = 'cache-first';
 
 @Injectable({
@@ -26,39 +27,77 @@ export class UserService {
     this.apolloClient = apollo.getClient();
   }
 
-  async fetchUsers(
-    searchWord: string,
-    fetchMore: boolean = false,
-    numberOfResult: number = NUMBER_OF_RESULT,
-  ): Promise<UserFetchResult | null | undefined> {
-    const queryVariables = {
-      first: numberOfResult,
-      searchKeyword: searchWord,
-    };
+  fetchUsers(queryVariables: UserQueryVariables): Observable<UserFetchResult> {
+    this.usersQuery = this.apollo.watchQuery<UserFetchResult>({
+      query: GITHUB_USERS_QUERY,
+      variables: queryVariables,
+      fetchPolicy: FETCH_POLICY,
+    });
 
+    const result = this.usersQuery.valueChanges.pipe(
+      map((fetchResult: any) => {
+        console.log(fetchResult);
+        const usersConnection: UserFetchResult = {
+          search: fetchResult.data.search,
+        };
+        return usersConnection;
+      }),
+    );
+
+    return result;
+  }
+
+  fetchMoreUsers(numberOfResult: number): Observable<UserFetchResult> {
+    let queryResult!: UserFetchResult;
     try {
-      if (fetchMore) {
-        // Fetching more users
-        return await this.fetchMoreUsers(numberOfResult);
-      } else {
-        // Try to read from cache
-        const usersConnectionCache = this.readQuery(queryVariables);
+      const queryVariables = {
+        first: numberOfResult,
+        after: this.resultCursor,
+      };
+      this.usersQuery
+        .fetchMore({
+          variables: queryVariables,
+          updateQuery: (previousResult, { fetchMoreResult }) => {
+            if (!fetchMoreResult) {
+              return previousResult;
+            }
 
-        if (usersConnectionCache) {
-          // Update query variables
-          this.updateQueryVariables(queryVariables);
-          return usersConnectionCache;
-        } else {
-          // Initial request
-          this.reset();
-          this.initializeQuery(queryVariables);
-        }
+            const currentUserNodes = fetchMoreResult.search.nodes;
+            const previousUserNodes = previousResult.search.nodes;
+
+            // Merged previous and current results
+            const mergedUserNodes = [...(previousUserNodes ?? []), ...(currentUserNodes ?? [])];
+            fetchMoreResult.search.nodes = mergedUserNodes;
+
+            return (queryResult = fetchMoreResult);
+          },
+        })
+        .finally(() => {
+          return queryResult;
+        });
+    } catch (error) {
+      console.log(error);
+    }
+    return of(queryResult);
+  }
+
+  readUsersFromCache(queryVariables: UserQueryVariables): Observable<UserFetchResult | null> {
+    let usersConnectionCache: Observable<UserFetchResult | null>;
+    try {
+      // Try to read from cache
+      const cache = this.readQuery(queryVariables);
+
+      if (cache) {
+        usersConnectionCache = of(cache);
+        // Update query variables
+        this.updateQueryVariables(queryVariables);
+        return usersConnectionCache;
       }
     } catch (error) {
       console.log(error);
     }
 
-    return undefined;
+    return of(null);
   }
 
   populateUsers(usersConnection: SearchResultItemConnection | undefined): Observable<User[]> | undefined {
@@ -108,41 +147,7 @@ export class UserService {
   // END: GETTERS
 
   // PRIVATE FUNCTIONS
-  private async fetchMoreUsers(numberOfResult: number): Promise<UserFetchResult> {
-    let queryResult!: UserFetchResult;
-    try {
-      const queryVariables = {
-        first: numberOfResult,
-        after: this.resultCursor,
-      };
-      await this.usersQuery
-        .fetchMore({
-          variables: queryVariables,
-          updateQuery: (previousResult, { fetchMoreResult }) => {
-            if (!fetchMoreResult) {
-              return previousResult;
-            }
-
-            const currentUserNodes = fetchMoreResult.search.nodes;
-            const previousUserNodes = previousResult.search.nodes;
-
-            // Merged previous and current results
-            const mergedUserNodes = [...(previousUserNodes ?? []), ...(currentUserNodes ?? [])];
-            fetchMoreResult.search.nodes = mergedUserNodes;
-
-            return (queryResult = fetchMoreResult);
-          },
-        })
-        .finally(() => {
-          return queryResult;
-        });
-    } catch (error) {
-      console.log(error);
-    }
-    return queryResult;
-  }
-
-  private readQuery(queryVariables: {}): UserFetchResult | null {
+  private readQuery(queryVariables: UserQueryVariables): UserFetchResult | null {
     try {
       const usersConnectionCache = this.apolloClient.readQuery<UserFetchResult>({
         query: GITHUB_USERS_QUERY,
@@ -154,23 +159,8 @@ export class UserService {
     }
   }
 
-  private initializeQuery(queryVariables: {}) {
-    this.usersQuery = this.apollo.watchQuery<UserFetchResult>({
-      query: GITHUB_USERS_QUERY,
-      variables: queryVariables,
-      fetchPolicy: FETCH_POLICY,
-    });
-  }
-
-  private updateQueryVariables(queryVariables: {}) {
+  private updateQueryVariables(queryVariables: UserQueryVariables) {
     this.usersQuery.setVariables(queryVariables);
-  }
-
-  private reset() {
-    this.resultCursor = '';
-    this.resultHasNextPage = true;
-    this.totalCount = 0;
-    this.currentCount = 0;
   }
   // END: PRIVATE FUNCTIONS
 }

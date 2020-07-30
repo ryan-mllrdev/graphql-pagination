@@ -29,7 +29,7 @@
     </ion-col>
   </ion-grid>
 
-  <ion-infinite-scroll threshold="100px" (ionInfinite)="loadRepositories($event)">
+  <ion-infinite-scroll threshold="100px" (ionInfinite)="fetchMore($event)">
     <ion-infinite-scroll-content loadingSpinner="bubbles" loadingText="{{loadingStatus}}">
     </ion-infinite-scroll-content>
   </ion-infinite-scroll>
