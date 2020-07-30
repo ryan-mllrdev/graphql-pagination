@@ -127,10 +127,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
     };
 
     // Read value from cache first
-    let cacheUsers!: UserFetchResult | null;
-    this.userService.readUsersFromCache(queryVariables).subscribe((result) => {
-      cacheUsers = result;
-    });
+    const cacheUsers: UserFetchResult | null = this.userService.readUsersFromCache(queryVariables);
     // Load values from cache
     if (cacheUsers) {
       this.updateValues(cacheUsers);

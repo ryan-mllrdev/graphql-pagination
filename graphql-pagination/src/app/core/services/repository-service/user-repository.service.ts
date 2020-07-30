@@ -92,10 +92,7 @@ export class UserRepositoryService {
         this.updateQueryVariables(queryVariables);
         return repositoryCache;
       }
-    } catch (error) {
-      console.log(error);
-    }
-
+    } catch (error) {}
     return repositoryCache;
   }
 

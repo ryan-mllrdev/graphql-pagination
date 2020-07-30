@@ -80,22 +80,19 @@ export class UserService {
     return of(fetchResult);
   }
 
-  readUsersFromCache(queryVariables: UserQueryVariables): Observable<UserFetchResult | null> {
-    let usersConnectionCache!: Observable<UserFetchResult | null>;
+  readUsersFromCache(queryVariables: UserQueryVariables): UserFetchResult | null {
+    let usersConnectionCache!: UserFetchResult | null;
     try {
       // Try to read from cache
       const cache = this.readQuery(queryVariables);
 
       if (cache) {
-        usersConnectionCache = of(cache);
+        usersConnectionCache = cache;
         // Update query variables
         this.updateQueryVariables(queryVariables);
         return usersConnectionCache;
       }
-    } catch (error) {
-      console.log(error);
-    }
-
+    } catch (error) {}
     return usersConnectionCache;
   }
 
