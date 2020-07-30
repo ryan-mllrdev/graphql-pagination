@@ -62,9 +62,9 @@ export class UsersComponent implements AfterViewInit, OnInit {
     if (!keyword) {
       return;
     }
+    this.disableInfiniteScroll(false);
     this.toggleFetchingData(true);
     this.initializeSearch(keyword);
-    this.disableInfiniteScroll(false);
     // Look for keywords from history list
     const existingKeyword = this.searchHistory.find((word) => word === keyword);
     if (!existingKeyword) {
@@ -143,6 +143,7 @@ export class UsersComponent implements AfterViewInit, OnInit {
   }
 
   private disableInfiniteScroll(disabled: boolean) {
+    this.infiniteScroll.complete();
     this.infiniteScroll.disabled = disabled;
   }
 
