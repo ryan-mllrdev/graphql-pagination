@@ -81,7 +81,7 @@ export class UserService {
   }
 
   readUsersFromCache(queryVariables: UserQueryVariables): Observable<UserFetchResult | null> {
-    let usersConnectionCache: Observable<UserFetchResult | null>;
+    let usersConnectionCache!: Observable<UserFetchResult | null>;
     try {
       // Try to read from cache
       const cache = this.readQuery(queryVariables);
@@ -96,7 +96,7 @@ export class UserService {
       console.log(error);
     }
 
-    return of(null);
+    return usersConnectionCache;
   }
 
   populateUsers(usersConnection: SearchResultItemConnection | undefined): Observable<User[]> | undefined {
