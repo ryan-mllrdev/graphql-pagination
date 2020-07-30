@@ -36,7 +36,6 @@ export class UserService {
 
     const result = this.usersQuery.valueChanges.pipe(
       map((fetchResult: any) => {
-        console.log(fetchResult);
         const usersConnection: UserFetchResult = {
           search: fetchResult.data.search,
         };
@@ -48,7 +47,7 @@ export class UserService {
   }
 
   fetchMoreUsers(numberOfResult: number): Observable<UserFetchResult> {
-    let queryResult!: UserFetchResult;
+    let fetchResult!: UserFetchResult;
     try {
       const queryVariables = {
         first: numberOfResult,
@@ -69,16 +68,16 @@ export class UserService {
             const mergedUserNodes = [...(previousUserNodes ?? []), ...(currentUserNodes ?? [])];
             fetchMoreResult.search.nodes = mergedUserNodes;
 
-            return (queryResult = fetchMoreResult);
+            return (fetchResult = fetchMoreResult);
           },
         })
         .finally(() => {
-          return queryResult;
+          return fetchResult;
         });
     } catch (error) {
       console.log(error);
     }
-    return of(queryResult);
+    return of(fetchResult);
   }
 
   readUsersFromCache(queryVariables: UserQueryVariables): Observable<UserFetchResult | null> {
