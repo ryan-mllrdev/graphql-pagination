@@ -5,6 +5,7 @@ import { FormControl, Validators } from '@angular/forms';
 import { IonInfiniteScroll } from '@ionic/angular';
 import { User } from '../core/types/User';
 import { UserFetchResult } from '../core/types/UserFetchResult';
+import { UserQueryVariables } from '../core/types/UserQueryVariables';
 
 @Component({
   selector: 'app-users',
@@ -42,27 +43,27 @@ export class UsersComponent implements AfterViewInit, OnInit {
     this.initialize();
   }
 
-  async loadUsers(event: any) {
+  fetchMore(event: any) {
     this.toggleFetchingData(true);
     // Show loading status
     this.showFetchStatus();
 
     // Load more if has next pages
     if (this.userService.hasNextPage) {
-      await this.loadMoreUsers(this.searchUserInput.value);
+      this.fetchMoreUsers(this.searchUserInput.value);
     } else {
       this.disableInfiniteScroll(true);
       this.toggleFetchingData(false);
     }
   }
 
-  async search() {
+  search() {
     const keyword = this.searchUserInput.value;
     if (!keyword) {
       return;
     }
     this.toggleFetchingData(true);
-    await this.initializeSearch(keyword);
+    this.initializeSearch(keyword);
     this.disableInfiniteScroll(false);
     // Look for keywords from history list
     const existingKeyword = this.searchHistory.find((word) => word === keyword);
@@ -109,35 +110,36 @@ export class UsersComponent implements AfterViewInit, OnInit {
     });
   }
 
-  private async loadMoreUsers(keyword: string) {
+  private fetchMoreUsers(keyword: string) {
     // Fetch more data
-    const userConnections = await this.userService.fetchUsers(keyword, true, this.numberOfResultValue);
-    if (userConnections) {
-      this.updateValues(userConnections);
-    }
-  }
-
-  private async initializeSearch(keyword: string) {
-    // Check if in cache
-    const cachedUserConnections = await this.userService.fetchUsers(keyword, false, this.numberOfResultValue);
-    // Load values from cache
-    if (cachedUserConnections) {
-      this.updateValues(cachedUserConnections);
-    }
-    // Listen to value changes
-    this.subscribeForIncomingData();
-  }
-
-  private subscribeForIncomingData() {
-    this.userService.usersQuery.valueChanges.subscribe((userConnections) => {
-      if (!userConnections || userConnections.loading) {
+    this.userService.fetchMoreUsers(this.numberOfResultValue).subscribe((result) => {
+      if (!result || this.valuesUpdated) {
         return;
       }
-
-      if (!this.valuesUpdated) {
-        this.updateValues(userConnections.data);
-      }
+      this.updateValues(result);
     });
+  }
+
+  private initializeSearch(keyword: string) {
+    const queryVariables: UserQueryVariables = {
+      searchKeyword: keyword,
+      first: this.numberOfResultValue,
+    };
+
+    // Read value from cache first
+    const cacheUsers: UserFetchResult | null = this.userService.readUsersFromCache(queryVariables);
+    // Load values from cache
+    if (cacheUsers) {
+      this.updateValues(cacheUsers);
+    } else {
+      this.userService.fetchUsers(queryVariables).subscribe((result) => {
+        if (!result || this.valuesUpdated) {
+          return;
+        }
+
+        this.updateValues(result);
+      });
+    }
   }
 
   private disableInfiniteScroll(disabled: boolean) {

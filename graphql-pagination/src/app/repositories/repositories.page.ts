@@ -6,6 +6,7 @@ import { Repository } from '../core/types/Repository';
 import { IonInfiniteScroll, IonContent } from '@ionic/angular';
 import { FormControl } from '@angular/forms';
 import { RepositoryFetchResult } from '../core/types/RepositoryFetchResult';
+import { RepositoryQueryVariables } from '../core/types/RepositoryQueryVariables';
 
 @Component({
   selector: 'app-repositories',
@@ -27,24 +28,23 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   totalCount = 0;
   currentCount = 0;
 
-  constructor(private route: ActivatedRoute, private userRepositoryService: UserRepositoryService) {}
+  constructor(private route: ActivatedRoute, private repositoryService: UserRepositoryService) {}
 
   ngAfterViewInit() {
     this.disableInfiniteScroll(true);
-  }
-
-  ngOnInit() {
     this.initialize();
   }
 
-  async loadRepositories(event: any) {
+  ngOnInit() {}
+
+  fetchMore(event: any) {
     this.valuesUpdated = false;
     // Show loading status
     this.showFetchStatus();
 
     // Load more if has next pages
-    if (this.userRepositoryService.userRepositoriesHasNextPage) {
-      await this.loadMoreUserRepositoriesConnection(this.loginName);
+    if (this.repositoryService.userRepositoriesHasNextPage) {
+      this.fetchMoreRepositories();
     } else {
       this.disableInfiniteScroll(true);
     }
@@ -55,7 +55,7 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
   }
 
   // PRIVATE FUNCTIONS
-  private async initialize() {
+  private initialize() {
     this.searchInput = new FormControl();
     this.loginName = this.route.snapshot.paramMap.get('login') ?? '';
 
@@ -69,51 +69,47 @@ export class RepositoriesPage implements OnInit, AfterViewInit {
     });
 
     this.valuesUpdated = false;
+
     // Check if in cache
-    const cachedUserRepositoriesConnection = await this.userRepositoryService.fetchUserRepositories(
-      this.loginName,
-      false,
-      this.numberOfResult,
-    );
+    const queryVariables: RepositoryQueryVariables = {
+      login: this.loginName,
+      first: this.numberOfResult,
+    };
+
+    const cacheRepositories: RepositoryFetchResult | null = this.repositoryService.readRepositoriesFromCache(queryVariables);
 
     // Load values from cache
-    if (cachedUserRepositoriesConnection) {
-      this.updateValues(cachedUserRepositoriesConnection);
+    if (cacheRepositories) {
+      this.updateValues(cacheRepositories);
+    } else {
+      this.repositoryService.fetchRepositories(queryVariables).subscribe((result) => {
+        if (!result || this.valuesUpdated) {
+          return;
+        }
+        this.updateValues(result);
+      });
     }
-
-    // Listen to value changes
-    this.subscribeForIncomingData();
 
     // Enable infinite scroll
     this.disableInfiniteScroll(false);
   }
 
-  private subscribeForIncomingData() {
-    // Subscribe for incoming data
-    this.userRepositoryService.userRepositoriesQuery.valueChanges.subscribe(({ data, loading }) => {
-      if (!data || loading) {
+  private fetchMoreRepositories() {
+    // Fetch more data
+    this.repositoryService.fetchMoreRepositories(this.numberOfResult).subscribe((result) => {
+      if (!result || this.valuesUpdated) {
         return;
       }
-      if (!this.valuesUpdated) {
-        this.updateValues(data);
-      }
+      this.updateValues(result);
     });
-  }
-
-  private async loadMoreUserRepositoriesConnection(loginName: string) {
-    // Fetch more data
-    const userRepositoriesConnection = await this.userRepositoryService.fetchUserRepositories(loginName, true, this.numberOfResult);
-    if (userRepositoriesConnection) {
-      this.updateValues(userRepositoriesConnection);
-    }
   }
 
   private updateValues(repositoryFetchResult: RepositoryFetchResult) {
     // Get the updated values
     this.valuesUpdated = true;
-    this.repositories = this.userRepositoryService.populateRepositories(repositoryFetchResult.user.repositories);
-    this.totalCount = this.userRepositoryService.repositoriesCount;
-    this.currentCount = this.userRepositoryService.fetchedCount;
+    this.repositories = this.repositoryService.populateRepositories(repositoryFetchResult.user.repositories);
+    this.totalCount = this.repositoryService.repositoriesCount;
+    this.currentCount = this.repositoryService.fetchedCount;
     // Call complete to make the infinite scroll available for the next request
     this.infiniteScroll.complete();
   }
